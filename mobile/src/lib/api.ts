@@ -24,7 +24,7 @@ function defaultBaseUrl(): string {
   if (fromEnv) return fromEnv;
   const fromAppConfig = (Constants.expoConfig?.extra as Record<string, string> | undefined)?.apiBaseUrl;
   if (fromAppConfig) return fromAppConfig;
-  return 'http://192.168.0.3:8000';
+  return 'https://intubation-project.onrender.com';
 }
 
 let baseUrlOverride: string | null = null;

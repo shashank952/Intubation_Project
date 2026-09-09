@@ -37,12 +37,12 @@ export type HistoryStackParamList = {
 };
 
 export type ReportsStackParamList = {
-  Reports: undefined;
+  ReportsList: undefined;
   ReportDetail: { prediction: PredictionHistory };
 };
 
 export type SettingsStackParamList = {
-  Settings: undefined;
+  SettingsMain: undefined;
   About: undefined;
 };
 
@@ -104,7 +104,7 @@ function ReportsStack() {
         animationDuration: reduceMotion ? 0 : 240,
       }}
     >
-      <ReportsStackNav.Screen name="Reports" component={ReportsScreen} />
+      <ReportsStackNav.Screen name="ReportsList" component={ReportsScreen} />
       <ReportsStackNav.Screen name="ReportDetail" component={ReportDetailScreen} />
     </ReportsStackNav.Navigator>
   );
@@ -120,7 +120,7 @@ function SettingsStack() {
         animationDuration: reduceMotion ? 0 : 240,
       }}
     >
-      <SettingsStackNav.Screen name="Settings" component={SettingsScreen} />
+      <SettingsStackNav.Screen name="SettingsMain" component={SettingsScreen} />
       <SettingsStackNav.Screen name="About" component={AboutScreen} />
     </SettingsStackNav.Navigator>
   );
