@@ -2,8 +2,13 @@ services:
   - type: web
     name: airway-api
     env: docker
-    dockerfilePath: ./backend/deploy/Dockerfile.api
+    # Render's Docker runtime builds ./Dockerfile (repo root). The previous
+    # ./backend/deploy/Dockerfile.api path required a Blueprint-created service;
+    # a root Dockerfile lets `render services create` provision it directly.
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /health
+    plan: free
+    autoDeploy: true
     envVars:
       - key: MONGO_URL
         sync: false
@@ -22,13 +27,5 @@ services:
       - key: MODEL_DEVICE
         value: cpu
 
-  - type: web
-    name: airway-frontend
-    env: docker
-    dockerfilePath: ./Dockerfile.frontend
-    envVars:
-      - key: NEXT_PUBLIC_API_URL
-        fromService:
-          name: airway-api
-          type: web
-          property: host
+# The frontend is hosted on Vercel (set NEXT_PUBLIC_API_URL there to this
+# service's URL). The previous airway-frontend Render service was removed.

@@ -1,0 +1,30 @@
+# API-only runtime dependencies for the Render deployment image.
+#
+# The FastAPI app (backend.deploy.api) only imports: torch, pandas, numpy,
+# scikit-learn/joblib, pymongo/motor, fastapi/uvicorn, python-jose, passlib,
+# openai, pydantic-settings, email-validator, python-dotenv.
+#
+# Training / explainability extras in requirements.txt (torchvision, timm,
+# mlflow, captum, opencv-python, onnx, onnxruntime, matplotlib) are NOT
+# imported at runtime and are intentionally excluded to keep the image small
+# and the Render build fast.
+#
+# NOTE: torch is installed separately as a CPU-only build in the Dockerfile
+# (the default PyPI torch on Linux is a ~2.5GB CUDA build).
+
+fastapi>=0.110.0
+uvicorn>=0.27.0
+python-multipart>=0.0.9
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+joblib>=1.3.0
+pymongo>=4.6.0
+motor>=3.4.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=3.2.0,<4.0.0
+pydantic-settings>=2.0.0
+email-validator>=2.0.0
+python-dotenv>=1.0.0
+openai>=1.0.0
