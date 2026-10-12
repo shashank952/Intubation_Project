@@ -55,9 +55,9 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-[#F5F1DC] dark:bg-[#121212]">
       <Sidebar />
       <div className="lg:pl-64 transition-all duration-300">
-        <header className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 shadow-sm">
+        <header className="bg-white dark:bg-neutral-900 border-b-2 border-black dark:border-neutral-600 shadow-soft">
           <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-neutral-800 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-[4px] bg-gray-100 dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 flex items-center justify-center">
                 <FileText className="h-4 w-4 text-gray-500 dark:text-neutral-200" />
             </div>
             <div>
@@ -73,7 +73,7 @@ export default function ReportsPage() {
               <div className="animate-spin h-8 w-8 border-4 border-neutral-600 border-t-transparent rounded-sm" />
             </div>
           ) : predictions.length === 0 ? (
-            <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-600 p-10 text-center">
+            <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card p-10 text-center">
               <FileText className="h-12 w-12 text-gray-300 dark:text-neutral-500 mx-auto mb-3" />
               <p className="text-sm font-medium text-gray-500 dark:text-neutral-300">No reports yet</p>
               <p className="text-xs text-gray-400 dark:text-neutral-400 mt-1">Run an assessment to generate a clinical report</p>
@@ -84,14 +84,14 @@ export default function ReportsPage() {
               const report = reports[pred.id];
               const probEntries = Object.entries(pred.probabilities || {});
               return (
-                <div key={pred.id} className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-600 shadow-sm overflow-hidden">
+                <div key={pred.id} className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card overflow-hidden">
                   <button
                     onClick={() => toggleExpand(pred)}
                     className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-smooth text-left"
                   >
                     <div className="flex items-center gap-4">
                       <div className={clsx(
-                        'h-10 w-10 rounded-lg flex items-center justify-center',
+                        'h-10 w-10 rounded-[4px] border-2 border-black flex items-center justify-center',
                         pred.prediction === 'Easy' ? 'bg-green-50 dark:bg-green-900/30' :
                         pred.prediction === 'Moderate' ? 'bg-yellow-50 dark:bg-yellow-900/30' :
                         'bg-red-50 dark:bg-red-900/30'
@@ -107,7 +107,7 @@ export default function ReportsPage() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-gray-800 dark:text-neutral-50">{pred.patient_id}</span>
                           <span className={clsx(
-                            'text-[10px] font-semibold px-2 py-0.5 rounded-sm',
+                            'text-[10px] font-semibold px-2 py-0.5 rounded-[3px] border-2 border-black',
                             pred.prediction === 'Easy' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                             pred.prediction === 'Moderate' ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
                             'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -130,7 +130,7 @@ export default function ReportsPage() {
                   </button>
 
                   {isOpen && (
-                    <div className="border-t border-gray-100 dark:border-neutral-700 px-5 py-4 space-y-4 animate-fade-in">
+                    <div className="border-t-2 border-black dark:border-neutral-600 px-5 py-4 space-y-4 animate-fade-in">
                       {/* Probabilities */}
                       <div>
                         <h4 className="text-xs font-semibold text-gray-500 dark:text-neutral-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -139,10 +139,10 @@ export default function ReportsPage() {
                         <div className="flex gap-3">
                           {probEntries.map(([key, val]) => (
                             <div key={key} className={clsx(
-                              'flex-1 rounded-lg px-3 py-2 text-center border',
-                              key === 'Easy' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
-                              key === 'Moderate' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
-                              'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                              'flex-1 rounded-[4px] px-3 py-2 text-center border-2 border-black',
+                              key === 'Easy' ? 'bg-green-50 dark:bg-green-900/20' :
+                              key === 'Moderate' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
+                              'bg-red-50 dark:bg-red-900/20'
                             )}>
                               <p className={clsx(
                                 'text-xs font-medium',
@@ -173,7 +173,7 @@ export default function ReportsPage() {
                               <h4 className="text-xs font-semibold text-gray-500 dark:text-neutral-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                               <Brain className="h-3 w-3" /> Clinical Summary
                             </h4>
-                            <div className="bg-brand-50 dark:bg-brand-950/20 border border-brand-200 dark:border-brand-800 rounded-lg p-4">
+                            <div className="bg-brand-50 dark:bg-brand-950/20 border-2 border-black dark:border-neutral-600 rounded-[4px] p-4">
                               <div className="text-sm text-gray-700 dark:text-neutral-200 space-y-1">
                                 {report.summary ? (
                                   report.summary.split('\n').filter((l) => l.trim()).map((line, i) => (
@@ -189,7 +189,7 @@ export default function ReportsPage() {
                               <h4 className="text-xs font-semibold text-gray-500 dark:text-neutral-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                               <Sparkles className="h-3 w-3" /> Recommendations
                             </h4>
-                            <div className="bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-600 rounded-lg p-4">
+                            <div className="bg-gray-100 dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 rounded-[4px] p-4">
                               <div className="text-sm text-gray-700 dark:text-neutral-200 space-y-1">
                                 {report.recommendations ? (
                                   report.recommendations.split('\n').filter((l) => l.trim()).map((line, i) => (
