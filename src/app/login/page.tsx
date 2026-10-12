@@ -77,7 +77,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Brand header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-xl bg-black shadow-[5px_5px_0_#111] mb-4">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-[4px] bg-black shadow-[5px_5px_0_#111111] mb-4">
             <Stethoscope className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Airway MD</h1>
@@ -87,7 +87,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+        <div className="bg-white rounded-[4px] border-2 border-black shadow-[6px_6px_0_#111111] p-8">
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800">
               Welcome Back
@@ -116,10 +116,10 @@ export default function LoginPage() {
                   if (error) setError('');
                 }}
                 className={clsx(
-                  'w-full px-4 py-2.5 text-sm border rounded-xl transition-smooth focus:outline-none focus:ring-2',
+                  'w-full px-4 py-2.5 text-sm border-2 rounded-[4px] shadow-[5px_5px_0_#111111] transition-smooth focus:outline-none focus:ring-2',
                   error
-                    ? 'border-danger-300 focus:ring-danger-200'
-                    : 'border-gray-200 focus:ring-brand-200 focus:border-brand-400 hover:border-gray-300'
+                    ? 'border-danger-500 focus:ring-danger-300'
+                    : 'border-black focus:ring-brand-300 focus:border-brand-400 hover:border-neutral-300'
                 )}
                 autoComplete="email"
               />
@@ -144,10 +144,10 @@ export default function LoginPage() {
                     if (error) setError('');
                   }}
                   className={clsx(
-                    'w-full px-4 py-2.5 pr-11 text-sm border rounded-xl transition-smooth focus:outline-none focus:ring-2',
+                    'w-full px-4 py-2.5 pr-11 text-sm border-2 rounded-[4px] shadow-[5px_5px_0_#111111] transition-smooth focus:outline-none focus:ring-2',
                     error
-                      ? 'border-danger-300 focus:ring-danger-200'
-                    : 'border-gray-200 focus:ring-brand-300 focus:border-brand-400 hover:border-gray-300'
+                      ? 'border-danger-500 focus:ring-danger-300'
+                    : 'border-black focus:ring-brand-300 focus:border-brand-400 hover:border-neutral-300'
                   )}
                   autoComplete="current-password"
                 />
@@ -168,7 +168,7 @@ export default function LoginPage() {
 
             {/* Error message */}
             {error && (
-              <div className="p-3 bg-danger-50 border border-danger-200 rounded-xl flex items-start gap-2.5">
+              <div className="p-3 bg-danger-50 border-2 border-black rounded-[4px] flex items-start gap-2.5">
                 <AlertCircle className="h-4 w-4 text-danger-500 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-danger-700">{error}</p>
               </div>
@@ -179,10 +179,10 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               className={clsx(
-                'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-black border-2 border-black transition-smooth shadow-[4px_4px_0_#111]',
+                'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[4px] text-sm font-bold text-black border-2 border-black transition-smooth shadow-[4px_4px_0_#111111]',
                 loading
                   ? 'bg-neutral-200 cursor-not-allowed'
-                  : 'bg-brand-500 hover:bg-brand-400 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#111] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none'
+                  : 'bg-brand-500 hover:bg-brand-400 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#111111] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none'
               )}
             >
               {loading && (
@@ -214,13 +214,13 @@ export default function LoginPage() {
             {/* Sign Up Button */}
             <Link
               href="/signup"
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-700 border-2 border-gray-300 transition-smooth shadow-[4px_4px_0_#ccc] hover:bg-gray-100 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#ccc] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[4px] text-sm font-bold text-black bg-white border-2 border-black transition-smooth shadow-[4px_4px_0_#111111] hover:bg-neutral-100 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#111111] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
             >
               Sign Up
             </Link>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
+          <div className="mt-6 pt-6 border-t-2 border-black text-center">
             <p className="text-xs text-gray-400">
               Secure clinical assessment platform
             </p>

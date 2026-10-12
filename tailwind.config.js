@@ -89,14 +89,14 @@ module.exports = {
         },
       },
       borderRadius: {
-        none: '0px',
+        none: '0px', // Neo-Brutalist: scale intentionally collapsed to square surfaces.
         sm: '2px',
         DEFAULT: '4px',
         md: '4px',
         lg: '4px',
-        xl: '6px',
-        '2xl': '6px',
-        '3xl': '8px',
+        xl: '4px',
+        '2xl': '4px',
+        '3xl': '6px',
         full: '9999px',
       },
       boxShadow: {

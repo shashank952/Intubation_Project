@@ -126,16 +126,16 @@ export default function DashboardPage() {
 
   function FormStatusBar({ patient, onEdit, onNew }: { patient: PredictionInput; onEdit: () => void; onNew: () => void }) {
     return (
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-card animate-fade-in">
+      <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card animate-fade-in">
         <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-xl bg-black flex items-center justify-center shadow-soft">
+            <div className="h-10 w-10 rounded-[4px] bg-black flex items-center justify-center shadow-soft">
               <User className="h-5 w-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-50">{patient.patient_id}</span>
-                <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-sm">{patient.gender}</span>
+                <span className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 px-2 py-0.5 rounded-[2px]">{patient.gender}</span>
               </div>
               <div className="flex items-center gap-3 mt-0.5 text-xs text-neutral-500 dark:text-neutral-300">
                 <span>{patient.age}y</span>
@@ -150,11 +150,11 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-700 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/30 border border-brand-200 dark:border-brand-800 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-950/50 transition-smooth">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-black bg-brand-500 border-2 border-black rounded-[4px] shadow-[2px_2px_0_#111111] hover:bg-brand-400 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-smooth">
               <Plus className="h-3.5 w-3.5" /> New
             </button>
             <button onClick={onEdit}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-smooth">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 rounded-[4px] shadow-[2px_2px_0_#111111] dark:shadow-[2px_2px_0_#3F3F46] hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-smooth">
               <Edit3 className="h-3.5 w-3.5" /> Edit
             </button>
           </div>
@@ -185,12 +185,12 @@ export default function DashboardPage() {
 
       <div className="lg:pl-64 transition-all duration-300">
         {/* Top Bar */}
-        <header className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 shadow-soft">
+        <header className="bg-white dark:bg-neutral-900 border-b-2 border-black dark:border-neutral-600 shadow-soft">
           <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="lg:hidden w-10" />
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-black flex items-center justify-center shadow-soft">
+                <div className="h-8 w-8 rounded-[4px] bg-black flex items-center justify-center shadow-soft">
                   <Activity className="h-4 w-4 text-white" />
                 </div>
                 <div>
@@ -207,10 +207,10 @@ export default function DashboardPage() {
               {llmStatus !== null && (
               <span
                 className={clsx(
-                  'hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold border-2 border-black rounded-[4px]',
+                  'hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold border-2 border-black rounded-[3px]',
                   llmStatus === 'connected'
-                    ? 'bg-success-50 text-success-700'
-                    : 'bg-danger-50 text-danger-700'
+                    ? 'bg-success-100 text-success-800'
+                    : 'bg-danger-100 text-danger-800'
                 )}
               >
                 <span
@@ -224,17 +224,17 @@ export default function DashboardPage() {
               )}
               <button
                 onClick={toggleTheme}
-                className="h-9 w-9 rounded-lg bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 flex items-center justify-center text-neutral-500 dark:text-neutral-300 hover:text-neutral-700 dark:hover:text-neutral-50 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-smooth"
+                className="h-9 w-9 rounded-[4px] bg-white dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 flex items-center justify-center text-neutral-600 dark:text-neutral-300 shadow-[2px_2px_0_#111111] dark:shadow-[2px_2px_0_#3F3F46] hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-smooth"
                 aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
               <button onClick={handleLogout}
-                className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm text-neutral-500 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-smooth border border-transparent hover:border-red-200 dark:hover:border-red-800">
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-800 rounded-[4px] border-2 border-black dark:border-neutral-600 hover:text-danger-700 dark:hover:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-900/20 transition-smooth">
                 <LogOut className="h-4 w-4" />
                 <span>Sign Out</span>
               </button>
-              <div className="h-8 w-8 rounded-sm bg-black flex items-center justify-center text-white text-sm font-semibold shadow-soft">
+              <div className="h-8 w-8 rounded-[3px] bg-black flex items-center justify-center text-white text-sm font-semibold shadow-soft">
                 {user.email.charAt(0).toUpperCase()}
               </div>
             </div>
@@ -245,7 +245,7 @@ export default function DashboardPage() {
           <div className="max-w-[1200px] mx-auto space-y-6">
           {/* Error banner */}
           {error && (
-            <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-xl flex items-start gap-2.5 animate-fade-in">
+            <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border-2 border-black dark:border-neutral-600 rounded-[4px] flex items-start gap-2.5 animate-fade-in">
               <div className="h-4 w-4 rounded-sm bg-danger-500 text-black flex items-center justify-center flex-shrink-0 mt-0.5">
                 <span className="text-[10px] font-bold">!</span>
               </div>
@@ -259,7 +259,7 @@ export default function DashboardPage() {
 
           {/* LLM slow warning */}
           {predicting && predictingSlow && (
-            <div className="p-3 bg-warning-50 dark:bg-warning-900/20 border-2 border-black rounded-[6px] flex items-center gap-2.5 animate-fade-in">
+            <div className="p-3 bg-warning-50 dark:bg-warning-900/20 border-2 border-black dark:border-neutral-600 rounded-[4px] flex items-center gap-2.5 animate-fade-in">
               <Loader2 className="h-4 w-4 animate-spin text-warning-600 flex-shrink-0" />
               <p className="text-sm font-medium text-warning-800 dark:text-warning-300">
                 The LLM response is taking longer than usual. Please wait…
@@ -284,7 +284,7 @@ export default function DashboardPage() {
             {activeRiskScore !== null ? (
               <div className="flex flex-col gap-4 h-full">
                 {selectedPrediction && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-xl animate-fade-in">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-brand-100 dark:bg-brand-900/30 border-2 border-black dark:border-neutral-600 rounded-[4px] animate-fade-in">
                     <span className="text-xs text-brand-700 dark:text-brand-300 font-medium">
                       Viewing record for <strong>{selectedPrediction.patient_id}</strong>
                     </span>
@@ -306,9 +306,9 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-card p-8 flex items-center justify-center h-full">
+              <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card p-8 flex items-center justify-center h-full">
                 <div className="text-center">
-                  <div className="h-20 w-20 rounded-sm bg-neutral-50 dark:bg-neutral-800 border-2 border-dashed border-neutral-200 dark:border-neutral-600 flex items-center justify-center mx-auto mb-4">
+                  <div className="h-20 w-20 rounded-[4px] bg-neutral-50 dark:bg-neutral-800 border-2 border-dashed border-black dark:border-neutral-500 flex items-center justify-center mx-auto mb-4">
                     <span className="text-3xl font-bold text-neutral-300 dark:text-neutral-500">?</span>
                   </div>
                   <p className="text-sm text-neutral-400 dark:text-neutral-300 font-medium">No risk score yet</p>

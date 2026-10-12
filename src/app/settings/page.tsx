@@ -39,9 +39,9 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-[#F5F1DC] dark:bg-[#121212]">
       <Sidebar />
       <div className="lg:pl-64 transition-all duration-300">
-        <header className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 shadow-sm">
+        <header className="bg-white dark:bg-neutral-900 border-b-2 border-black dark:border-neutral-600 shadow-soft">
           <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-neutral-800 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-[4px] bg-gray-100 dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 flex items-center justify-center">
                 <Settings className="h-4 w-4 text-gray-500 dark:text-neutral-200" />
             </div>
             <div>
@@ -53,8 +53,8 @@ export default function SettingsPage() {
 
         <main className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-2xl">
           {/* Profile */}
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-600 shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-100 dark:border-neutral-700 flex items-center gap-3">
+          <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card">
+            <div className="px-5 py-4 border-b-2 border-black dark:border-neutral-600 flex items-center gap-3">
               <User className="h-4 w-4 text-gray-400" />
               <h2 className="text-sm font-semibold text-gray-800 dark:text-neutral-50">Profile</h2>
             </div>
@@ -71,8 +71,8 @@ export default function SettingsPage() {
           </div>
 
           {/* Appearance */}
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-600 shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-100 dark:border-neutral-700 flex items-center gap-3">
+          <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card">
+            <div className="px-5 py-4 border-b-2 border-black dark:border-neutral-600 flex items-center gap-3">
               {dark ? <Moon className="h-4 w-4 text-gray-400" /> : <Sun className="h-4 w-4 text-gray-400" />}
               <h2 className="text-sm font-semibold text-gray-800 dark:text-neutral-50">Appearance</h2>
             </div>
@@ -101,8 +101,8 @@ export default function SettingsPage() {
           </div>
 
           {/* System Info */}
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-600 shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-100 dark:border-neutral-700 flex items-center gap-3">
+          <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card">
+            <div className="px-5 py-4 border-b-2 border-black dark:border-neutral-600 flex items-center gap-3">
               <Cpu className="h-4 w-4 text-gray-400" />
               <h2 className="text-sm font-semibold text-gray-800 dark:text-neutral-50">System</h2>
             </div>

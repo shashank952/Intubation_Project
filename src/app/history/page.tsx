@@ -52,7 +52,7 @@ export default function HistoryPage() {
 
       <div className="lg:pl-64 transition-all duration-300">
         {/* Header */}
-        <header className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 shadow-sm">
+        <header className="bg-white dark:bg-neutral-900 border-b-2 border-black dark:border-neutral-600 shadow-soft">
           <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="lg:hidden w-10" />
@@ -60,7 +60,7 @@ export default function HistoryPage() {
                 <div className="flex items-center gap-3">
                   <Link
                     href="/dashboard"
-                      className="h-8 w-8 rounded-lg bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-600 flex items-center justify-center text-gray-500 dark:text-neutral-300 hover:text-gray-700 dark:hover:text-neutral-50 hover:bg-gray-100 dark:hover:bg-neutral-700 transition-smooth"
+                      className="h-8 w-8 rounded-[4px] bg-white dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 flex items-center justify-center text-neutral-600 dark:text-neutral-300 shadow-[2px_2px_0_#111111] dark:shadow-[2px_2px_0_#3F3F46] hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-smooth"
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </Link>
@@ -75,7 +75,7 @@ export default function HistoryPage() {
                 </div>
               </div>
             </div>
-            <div className="h-8 w-8 rounded-sm bg-black flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+            <div className="h-8 w-8 rounded-[3px] bg-black flex items-center justify-center text-white text-sm font-semibold shadow-soft">
               {user.email.charAt(0).toUpperCase()}
             </div>
           </div>
