@@ -38,7 +38,7 @@ export default function RiskPredictionCard({
           label: 'Easy Airway',
           labelColor: 'text-success-700 dark:text-success-400',
           badgeBg: 'bg-success-50 dark:bg-success-900/20',
-          badgeBorder: 'border-success-200 dark:border-success-800',
+          badgeBorder: 'border-black dark:border-neutral-500',
           gauge: 'stroke-success-500',
           glow: 'bg-success-500/10',
         }
@@ -48,7 +48,7 @@ export default function RiskPredictionCard({
           label: 'Moderate Airway',
           labelColor: 'text-warning-700 dark:text-warning-400',
           badgeBg: 'bg-warning-50 dark:bg-warning-900/20',
-          badgeBorder: 'border-warning-200 dark:border-warning-800',
+          badgeBorder: 'border-black dark:border-neutral-500',
           gauge: 'stroke-warning-500',
           glow: 'bg-warning-500/10',
         }
@@ -58,7 +58,7 @@ export default function RiskPredictionCard({
           label: 'Difficult Airway',
           labelColor: 'text-danger-700 dark:text-danger-400',
           badgeBg: 'bg-danger-50 dark:bg-danger-900/20',
-          badgeBorder: 'border-danger-200 dark:border-danger-800',
+          badgeBorder: 'border-black dark:border-neutral-500',
           gauge: 'stroke-danger-500',
           glow: 'bg-danger-500/10',
         }
@@ -67,7 +67,7 @@ export default function RiskPredictionCard({
           label: 'Unknown',
           labelColor: 'text-neutral-500',
           badgeBg: 'bg-neutral-50 dark:bg-neutral-800',
-          badgeBorder: 'border-neutral-200 dark:border-neutral-700',
+          badgeBorder: 'border-black dark:border-neutral-500',
           gauge: 'stroke-neutral-400',
           glow: 'bg-neutral-500/10',
         };
@@ -75,7 +75,7 @@ export default function RiskPredictionCard({
   const order = ['Easy', 'Moderate', 'Difficult'];
 
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-card overflow-hidden animate-scale-in h-full flex flex-col">
+    <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card overflow-hidden animate-scale-in h-full flex flex-col">
       <div className={clsx('h-1.5 w-full', colorClasses.strip)} />
 
       <div className="p-6 flex-1 flex flex-col justify-between gap-5">
@@ -140,7 +140,7 @@ export default function RiskPredictionCard({
         {/* Bottom section — badge + bars */}
         <div className="space-y-4">
           {/* Prediction label */}
-          <div className={clsx('rounded-xl border-2 px-4 py-3 text-center', colorClasses.badgeBg, colorClasses.badgeBorder)}>
+          <div className={clsx('rounded-[4px] border-2 px-4 py-3 text-center', colorClasses.badgeBg, colorClasses.badgeBorder)}>
             <p className={clsx('text-base font-bold tracking-wide', colorClasses.labelColor)}>
               {colorClasses.label}
             </p>
@@ -182,7 +182,7 @@ export default function RiskPredictionCard({
                 return (
                   <div
                     key={key}
-                    className={clsx('h-full first:rounded-l-full last:rounded-r-full transition-all duration-700', barColor)}
+                    className={clsx('h-full transition-all duration-700', barColor)}
                     style={{ width: `${widthPct}%`, transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
                   />
                 );

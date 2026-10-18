@@ -12,8 +12,8 @@ interface StatsCardProps {
 
 export default function StatsCard({ easy, moderate, difficult, total }: StatsCardProps) {
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-card overflow-hidden">
-      <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-700 flex items-center gap-2">
+    <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card overflow-hidden">
+      <div className="px-4 py-3 border-b-2 border-black dark:border-neutral-600 flex items-center gap-2">
         <Activity className="h-4 w-4 text-brand-500 dark:text-brand-400" />
         <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Overview
@@ -47,7 +47,7 @@ export default function StatsCard({ easy, moderate, difficult, total }: StatsCar
           </div>
         </div>
         {total > 0 && (
-          <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700 flex items-center justify-between">
+          <div className="mt-3 pt-3 border-t-2 border-black dark:border-neutral-600 flex items-center justify-between">
             <span className="text-xs text-neutral-400 dark:text-neutral-500">Total assessments</span>
             <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 tabular-nums">{total}</span>
           </div>

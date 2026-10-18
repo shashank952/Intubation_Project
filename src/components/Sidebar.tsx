@@ -14,6 +14,7 @@ import {
   X,
   Stethoscope,
   ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { getUser, logout } from '@/lib/api';
@@ -41,6 +42,22 @@ export default function Sidebar() {
     }
   }, []);
 
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-w', collapsed ? '4rem' : '16rem');
+  }, [collapsed]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
+
   const handleLogout = () => {
     logout();
     router.push('/login');
@@ -53,37 +70,49 @@ export default function Sidebar() {
     return pathname === href;
   };
 
-  const sidebarContent = (
+  const renderSidebar = (isCollapsed: boolean) => (
     <div className="flex h-full flex-col bg-white dark:bg-neutral-900">
-      {/* Brand */}
-      <div className="flex items-center justify-between px-4 py-5 border-b border-gray-100 dark:border-neutral-700">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-black flex items-center justify-center shadow-soft ring-1 ring-white/20 dark:ring-white/10">
+      <div
+        className={clsx(
+          'flex items-center border-b-2 border-black dark:border-neutral-600',
+          isCollapsed ? 'flex-col gap-3 px-2 py-4' : 'justify-between px-4 py-5'
+        )}
+      >
+        <div className={clsx('flex items-center', isCollapsed ? 'justify-center' : 'gap-3')}>
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[4px] bg-black shadow-[3px_3px_0_#111111]">
             <Stethoscope className="h-5 w-5 text-white" />
           </div>
-          {!collapsed && (
+          {!isCollapsed && (
             <div>
-                <h1 className="text-lg font-bold text-gray-800 dark:text-neutral-50 leading-tight">
-                Airway MD
-              </h1>
-                <p className="text-[10px] text-gray-400 dark:text-neutral-400 font-medium tracking-wide uppercase">
+              <h1 className="text-lg font-bold leading-tight text-gray-800 dark:text-neutral-50">Airway MD</h1>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-neutral-400">
                 Clinical Assessment
               </p>
             </div>
           )}
         </div>
-        {!collapsed && (
+        {isCollapsed ? (
+          <button
+            onClick={() => setCollapsed(false)}
+            aria-label="Expand sidebar"
+            title="Expand"
+            className="hidden h-7 w-7 items-center justify-center rounded-[4px] border-2 border-black bg-brand-500 text-black shadow-[2px_2px_0_#000000] transition-smooth hover:brightness-95 lg:flex"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        ) : (
           <button
             onClick={() => setCollapsed(true)}
-            className="hidden lg:flex h-6 w-6 items-center justify-center rounded-[4px] bg-white dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 shadow-[2px_2px_0_#000000] dark:shadow-[2px_2px_0_#3F3F46] text-gray-400 hover:text-gray-600 dark:hover:text-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-700 transition-smooth"
+            aria-label="Collapse sidebar"
+            title="Collapse"
+            className="hidden h-7 w-7 items-center justify-center rounded-[4px] border-2 border-black bg-white text-gray-500 shadow-[2px_2px_0_#000000] transition-smooth hover:bg-gray-100 hover:text-gray-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 dark:shadow-[2px_2px_0_#3F3F46] dark:hover:bg-neutral-700 dark:hover:text-neutral-200 lg:flex"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className={clsx('flex-1 space-y-1 overflow-y-auto py-4', isCollapsed ? 'px-2' : 'px-3')}>
         {navItems.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
@@ -91,66 +120,87 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              title={item.label}
               onClick={() => setMobileOpen(false)}
               className={clsx(
-                'relative flex items-center gap-3 px-3 py-2.5 rounded-[5px] text-sm font-medium transition-smooth border-2',
+                'relative flex items-center rounded-[4px] border-2 text-sm font-semibold transition-smooth',
+                isCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-2.5',
                 active
-                  ? 'bg-brand-500 text-black border-black dark:border-neutral-600 shadow-[4px_4px_0_#000000] dark:shadow-[4px_4px_0_#3F3F46]'
-                  : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-black dark:border-neutral-600 shadow-[3px_3px_0_#000000] dark:shadow-[3px_3px_0_#3F3F46] hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                  ? 'border-black bg-brand-500 text-black shadow-[4px_4px_0_#000000] dark:border-neutral-600 dark:shadow-[4px_4px_0_#3F3F46]'
+                  : 'border-black bg-white text-neutral-600 shadow-[3px_3px_0_#000000] hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:shadow-[3px_3px_0_#3F3F46] dark:hover:bg-neutral-700'
               )}
             >
-              {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-brand-500" />
+              {active && !isCollapsed && (
+                <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-[1px] bg-black" />
               )}
               <Icon className={clsx('h-5 w-5 flex-shrink-0', active ? 'text-black' : 'text-neutral-400 dark:text-neutral-400')} />
-              {!collapsed && <span>{item.label}</span>}
+              {!isCollapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
       </nav>
 
-      {/* Bottom */}
-      {!collapsed && (
-        <div className="border-t border-gray-100 dark:border-neutral-700 px-4 py-4 space-y-2">
-          {user && (
-            <div className="flex items-center gap-3 px-3 py-2">
-              <div className="h-8 w-8 rounded-sm bg-black flex items-center justify-center text-white text-sm font-semibold shadow-soft">
-                {user.email.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-700 dark:text-neutral-100 truncate">{user.email}</p>
-                <p className="text-xs text-gray-400 dark:text-neutral-400 capitalize">{user.role}</p>
-              </div>
+      <div className={clsx('space-y-2 border-t-2 border-black py-4 dark:border-neutral-600', isCollapsed ? 'px-2' : 'px-4')}>
+        {!isCollapsed && user && (
+          <div className="flex items-center gap-3 px-3 py-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-[3px] bg-black text-sm font-semibold text-white shadow-[2px_2px_0_#111111]">
+              {user.email.charAt(0).toUpperCase()}
             </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-gray-700 dark:text-neutral-100">{user.email}</p>
+              <p className="text-xs capitalize text-gray-400 dark:text-neutral-400">{user.role}</p>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={handleLogout}
+          title="Sign Out"
+          className={clsx(
+            'flex w-full items-center rounded-[4px] border-2 border-black bg-white text-sm font-semibold text-neutral-700 shadow-[3px_3px_0_#111111] transition-smooth hover:bg-danger-50 hover:text-danger-700 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:shadow-[3px_3px_0_#3F3F46] dark:hover:bg-danger-900/20 dark:hover:text-danger-400',
+            isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2'
           )}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-gray-500 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] bg-white dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 shadow-[3px_3px_0_#000000] dark:shadow-[3px_3px_0_#3F3F46] transition-smooth"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      )}
+        >
+          <LogOut className="h-4 w-4" />
+          {!isCollapsed && <span>Sign Out</span>}
+        </button>
+      </div>
     </div>
   );
 
   return (
     <>
       <button
-        onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden h-10 w-10 rounded-[6px] bg-white dark:bg-neutral-800 shadow-[4px_4px_0_#000000] dark:shadow-[4px_4px_0_#3F3F46] border-2 border-black dark:border-neutral-600 flex items-center justify-center text-gray-600 dark:text-neutral-200 hover:text-gray-800 transition-smooth"
+        onClick={() => setMobileOpen((v) => !v)}
+        aria-label="Toggle navigation"
+        className="fixed left-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-black bg-white text-neutral-700 shadow-[4px_4px_0_#111111] transition-smooth hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:shadow-[4px_4px_0_#3F3F46] dark:hover:bg-neutral-700 lg:hidden"
       >
         {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
-      {mobileOpen && (
-        <div className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
-      )}
-      <aside className={clsx('fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-neutral-900 shadow-elevated border-r border-neutral-200 dark:border-neutral-700 transform transition-transform duration-300 ease-in-out lg:hidden', mobileOpen ? 'translate-x-0' : '-translate-x-full')}>
-        {sidebarContent}
+
+      <div
+        onClick={() => setMobileOpen(false)}
+        className={clsx(
+          'fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px] transition-opacity duration-300 lg:hidden',
+          mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+        )}
+      />
+
+      <aside
+        className={clsx(
+          'fixed inset-y-0 left-0 z-40 w-64 transform border-r-2 border-black bg-white shadow-elevated transition-transform duration-300 ease-smooth dark:border-neutral-600 dark:bg-neutral-900 lg:hidden',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        {renderSidebar(false)}
       </aside>
-      <aside className={clsx('hidden lg:flex flex-col fixed inset-y-0 left-0 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700 shadow-soft transition-[width] duration-300 ease-in-out z-30', collapsed ? 'w-16' : 'w-64')}>
-        {sidebarContent}
+
+      <aside
+        className={clsx(
+          'fixed inset-y-0 left-0 z-30 hidden flex-col border-r-2 border-black bg-white shadow-soft transition-[width] duration-300 ease-smooth dark:border-neutral-600 dark:bg-neutral-900 lg:flex',
+          collapsed ? 'w-16' : 'w-64'
+        )}
+      >
+        {renderSidebar(collapsed)}
       </aside>
     </>
   );

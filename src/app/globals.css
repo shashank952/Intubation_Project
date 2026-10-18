@@ -2,13 +2,119 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --paper: 245 241 220;
+  --brand-50: 255 251 234;
+  --brand-100: 255 243 194;
+  --brand-200: 255 232 138;
+  --brand-300: 255 222 82;
+  --brand-400: 255 217 0;
+  --brand-500: 255 217 0;
+  --brand-600: 232 196 0;
+  --brand-700: 196 166 0;
+  --brand-800: 158 133 0;
+  --brand-900: 107 93 0;
+  --brand-950: 58 50 0;
+}
+
+[data-theme='teal'] {
+  --paper: 225 244 244;
+  --brand-50: 231 251 251;
+  --brand-100: 200 243 244;
+  --brand-200: 156 231 234;
+  --brand-300: 94 212 217;
+  --brand-400: 47 198 204;
+  --brand-500: 22 194 200;
+  --brand-600: 15 166 171;
+  --brand-700: 13 131 136;
+  --brand-800: 10 101 105;
+  --brand-900: 7 72 75;
+  --brand-950: 4 38 42;
+}
+
+[data-theme='magenta'] {
+  --paper: 251 230 247;
+  --brand-50: 253 235 251;
+  --brand-100: 251 209 245;
+  --brand-200: 247 168 236;
+  --brand-300: 244 111 225;
+  --brand-400: 245 59 216;
+  --brand-500: 255 0 217;
+  --brand-600: 212 0 180;
+  --brand-700: 168 0 143;
+  --brand-800: 124 0 105;
+  --brand-900: 82 0 69;
+  --brand-950: 44 0 38;
+}
+
+[data-theme='coral'] {
+  --paper: 255 237 231;
+  --brand-50: 255 241 236;
+  --brand-100: 255 220 208;
+  --brand-200: 255 189 168;
+  --brand-300: 255 156 128;
+  --brand-400: 255 129 88;
+  --brand-500: 255 107 53;
+  --brand-600: 229 84 31;
+  --brand-700: 188 66 20;
+  --brand-800: 143 50 14;
+  --brand-900: 98 34 8;
+  --brand-950: 54 17 3;
+}
+
+[data-theme='lime'] {
+  --paper: 239 247 225;
+  --brand-50: 245 251 233;
+  --brand-100: 233 246 203;
+  --brand-200: 212 236 151;
+  --brand-300: 191 225 98;
+  --brand-400: 169 215 46;
+  --brand-500: 132 204 22;
+  --brand-600: 103 160 19;
+  --brand-700: 76 118 17;
+  --brand-800: 54 83 12;
+  --brand-900: 34 53 7;
+  --brand-950: 18 29 4;
+}
+
+[data-theme='violet'] {
+  --paper: 240 235 253;
+  --brand-50: 245 241 254;
+  --brand-100: 233 225 253;
+  --brand-200: 211 195 251;
+  --brand-300: 188 163 249;
+  --brand-400: 165 133 247;
+  --brand-500: 139 92 246;
+  --brand-600: 109 58 224;
+  --brand-700: 85 43 181;
+  --brand-800: 63 31 135;
+  --brand-900: 42 21 90;
+  --brand-950: 22 11 48;
+}
+
+[data-theme='sky'] {
+  --paper: 232 241 254;
+  --brand-50: 239 246 255;
+  --brand-100: 219 234 254;
+  --brand-200: 191 219 254;
+  --brand-300: 147 197 253;
+  --brand-400: 96 165 250;
+  --brand-500: 59 130 246;
+  --brand-600: 37 99 235;
+  --brand-700: 29 78 216;
+  --brand-800: 30 64 175;
+  --brand-900: 30 58 138;
+  --brand-950: 23 37 84;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-[#F5F1DC] text-[#111111] antialiased;
+    @apply text-[#111111] antialiased;
+    background-color: rgb(var(--paper));
   }
 
   .dark body,
@@ -17,15 +123,17 @@
   }
 
   ::selection {
-    @apply bg-[#FFD900] text-black;
+    background-color: rgb(var(--brand-500));
+    color: #000000;
   }
 
   .dark ::selection {
-    @apply bg-[#FFD900] text-black;
+    background-color: rgb(var(--brand-500));
+    color: #000000;
   }
 
   :focus-visible {
-    outline: 3px solid #FFD900;
+    outline: 3px solid rgb(var(--brand-500));
     outline-offset: 2px;
   }
 }
@@ -41,7 +149,37 @@
 
 @layer utilities {
   .transition-smooth {
-    @apply transition-all duration-300 ease-in-out;
+    @apply transition-all duration-150 ease-out;
+  }
+
+  .ease-smooth {
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .stagger-1 { animation-delay: 0.04s; }
+  .stagger-2 { animation-delay: 0.08s; }
+  .stagger-3 { animation-delay: 0.12s; }
+  .stagger-4 { animation-delay: 0.16s; }
+  .stagger-5 { animation-delay: 0.20s; }
+  .stagger-6 { animation-delay: 0.24s; }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -72,14 +210,14 @@
   height: 10px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-[#F5F1DC];
+  background-color: rgb(var(--paper));
 }
 .dark ::-webkit-scrollbar-track {
   @apply bg-[#121212];
 }
 ::-webkit-scrollbar-thumb {
   @apply bg-[#111111] rounded-none;
-  border: 2px solid #F5F1DC;
+  border: 2px solid rgb(var(--paper));
 }
 .dark ::-webkit-scrollbar-thumb {
   @apply bg-[#3F3F46];

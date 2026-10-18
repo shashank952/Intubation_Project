@@ -7,6 +7,7 @@ import {
   ArrowLeft, Shield,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
+import { NEO_THEMES, applyNeoTheme } from '@/components/ThemeSwitcher';
 import { getToken, getUser, logout } from '@/lib/api';
 import { BASE_URL } from '@/lib/api';
 import clsx from 'clsx';
@@ -15,6 +16,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<{ email: string; role: string } | null>(null);
   const [dark, setDark] = useState(false);
+  const [neoTheme, setNeoTheme] = useState('yellow');
 
   useEffect(() => {
     if (!getToken()) { router.replace('/login'); return; }
@@ -24,6 +26,7 @@ export default function SettingsPage() {
     if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       setDark(true);
     }
+    setNeoTheme(localStorage.getItem('neo-theme') || 'yellow');
   }, [router]);
 
   const toggleDark = () => {
@@ -36,12 +39,13 @@ export default function SettingsPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#F5F1DC] dark:bg-[#121212]">
+    <div className="min-h-screen bg-paper dark:bg-[#121212]">
       <Sidebar />
-      <div className="lg:pl-64 transition-all duration-300">
-        <header className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 shadow-sm">
+      <div className="pl-0 transition-[padding-left] duration-300 ease-smooth lg:pl-[var(--sidebar-w,16rem)]">
+        <header className="bg-white dark:bg-neutral-900 border-b-2 border-black dark:border-neutral-600 shadow-soft">
           <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-neutral-800 flex items-center justify-center">
+              <div className="lg:hidden w-10" />
+              <div className="h-8 w-8 rounded-[4px] bg-gray-100 dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 flex items-center justify-center">
                 <Settings className="h-4 w-4 text-gray-500 dark:text-neutral-200" />
             </div>
             <div>
@@ -53,8 +57,8 @@ export default function SettingsPage() {
 
         <main className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-2xl">
           {/* Profile */}
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-600 shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-100 dark:border-neutral-700 flex items-center gap-3">
+          <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card">
+            <div className="px-5 py-4 border-b-2 border-black dark:border-neutral-600 flex items-center gap-3">
               <User className="h-4 w-4 text-gray-400" />
               <h2 className="text-sm font-semibold text-gray-800 dark:text-neutral-50">Profile</h2>
             </div>
@@ -71,8 +75,8 @@ export default function SettingsPage() {
           </div>
 
           {/* Appearance */}
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-600 shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-100 dark:border-neutral-700 flex items-center gap-3">
+          <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card">
+            <div className="px-5 py-4 border-b-2 border-black dark:border-neutral-600 flex items-center gap-3">
               {dark ? <Moon className="h-4 w-4 text-gray-400" /> : <Sun className="h-4 w-4 text-gray-400" />}
               <h2 className="text-sm font-semibold text-gray-800 dark:text-neutral-50">Appearance</h2>
             </div>
@@ -97,12 +101,31 @@ export default function SettingsPage() {
                   )} />
                 </button>
               </div>
+              <div className="mt-4 border-t-2 border-black pt-4 dark:border-neutral-600">
+                <p className="text-sm font-medium text-gray-800 dark:text-neutral-50">Theme</p>
+                <p className="mb-3 text-xs text-gray-400 dark:text-neutral-400">Neo-brutalist color scheme</p>
+                <div className="flex flex-wrap gap-2">
+                  {NEO_THEMES.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => { setNeoTheme(t.id); applyNeoTheme(t.id); }}
+                      title={t.label}
+                      aria-label={t.label}
+                      className={clsx(
+                        'h-8 w-8 rounded-[4px] border-2 border-black shadow-[2px_2px_0_#111111] transition-smooth hover:-translate-y-[1px]',
+                        neoTheme === t.id && 'ring-2 ring-black ring-offset-2 dark:ring-neutral-300 dark:ring-offset-neutral-900'
+                      )}
+                      style={{ background: t.color }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* System Info */}
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-600 shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-100 dark:border-neutral-700 flex items-center gap-3">
+          <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card">
+            <div className="px-5 py-4 border-b-2 border-black dark:border-neutral-600 flex items-center gap-3">
               <Cpu className="h-4 w-4 text-gray-400" />
               <h2 className="text-sm font-semibold text-gray-800 dark:text-neutral-50">System</h2>
             </div>
