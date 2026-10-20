@@ -49,7 +49,7 @@ ID_COL = "Patient_ID"
 
 def load_and_split(xlsx_path: str, test_size: float = 0.15, val_size: float = 0.15, seed: int = 42):
     df = pd.read_excel(xlsx_path)
-    ids = df[ID_COL].values
+    ids = df[ID_COL].to_numpy()  # .to_numpy() (not .values) -> plain ndarray for arrow-backed str
     y = df[TARGET_COL].values
 
     train_ids, temp_ids, y_train, y_temp = train_test_split(
