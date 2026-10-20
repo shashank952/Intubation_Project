@@ -136,7 +136,7 @@ The application has a **reasonable security foundation** for an early-stage proj
 |---|---|---|---|
 | J1 | **JWT stored in `localStorage`** (`access_token`). Any XSS in the app yields the token. Not sent as an HttpOnly cookie. | 🟠 MEDIUM | `src/lib/api.ts:31` |
 | J2 | **LLM output rendered as React text** (auto-escaped); the only `dangerouslySetInnerHTML` is a **static** theme script (no user input). No stored/reflected XSS from LLM output. | ✅ Good | `AiClinicalAssessment.tsx:150-183`, `layout.tsx:37-42` |
-| J3 | **Local demo mode** (`isLocalHost()`) sets a fake token and shows demo data on any `localhost`/private-IP host. This is a convenience, but it means anyone able to reach the dev server sees the demo dataset without auth. Not a production path. | 🟡 LOW | `localDemo.ts`, `api.ts:186,194` |
+| J3 | **Local demo mode** (`isLocalHost()`) sets a fake token and shows demo data on any `localhost`/private-IP host. This is a convenience, but it means anyone able to reach the dev server sees the demo dataset without auth. Not a production path. | 🟡 LOW → ✅ RESOLVED 2026-10-20 | Removed entirely (`localDemo.ts`, `demoData.ts`, and all demo branches deleted) |
 | J4 | **`predictionStore.tsx` persists patient PHI + result to `localStorage`** (added for the background-task feature) — PHI now persists in browser storage beyond the session. | 🟡 LOW | `predictionStore.tsx:69-86` |
 
 ### 3.11 Container & Deployment
