@@ -40,6 +40,8 @@ jobs:
           python-version: "3.10"
           cache: "pip"
       - run: pip install -r requirements.txt
+      - run: pip install pytest
+      - run: python -m pytest tests/ -q
       - run: python -c "from backend.deploy.config import settings; print('Config OK')"
       - run: python -c "from backend.deploy.schemas import *; print('Schemas OK')"
       - run: python -c "from backend.deploy.auth import *; print('Auth OK')"
