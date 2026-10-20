@@ -63,11 +63,11 @@ No Makefile, no `pyproject.toml`, no pre-commit hooks.
 - `api.py` — FastAPI app: lifespan (DB + indexes + model), CORS, security headers, HTTPS enforcement, request-ID middleware, `/health` `/live` `/ready`
 - `config.py` — Pydantic settings (see `.env.example`); JWT secret backstop
 - `database.py` — Motor connection, indexes, audit logging
-- `auth.py` — JWT + bcrypt, role hierarchy (admin > doctor > viewer), `require_role(...)`
+- `auth.py` — JWT + bcrypt, role hierarchy (admin > doctor > viewer), `require_role(...)`, session `sid` claims + `session_error(...)`/`should_touch(...)` helpers
 - `model_loader.py` — **fail-fast** checkpoint loading (strict state_dict), model version (sha256:8) on every prediction
 - `logging_config.py` — JSON-per-line log formatter
 - `llm_assistant.py` — LLM prompt engineering + fallback clinical text
-- `routers/{auth,llm,patients,predictions}.py`
+- `routers/{auth,llm,patients,predictions}.py` — `/api/auth/login|logout|heartbeat|me`, etc.
 - `schemas.py` — Pydantic input/output models with bounds + patient_id charset
 - `export.py` — ONNX export (STALE — wrong dummy shapes, see gotchas)
 - `Dockerfile.api` — API image (root build context)
@@ -75,6 +75,8 @@ No Makefile, no `pyproject.toml`, no pre-commit hooks.
 ## Key gotchas (verified from code)
 
 - **Model must load or the app refuses to start**: `MODEL_REQUIRED=true` (default). A missing checkpoint raises at startup instead of silently serving random weights. `MODEL_REQUIRED=false` is dev-only.
+- **Sessions are server-enforced**: every JWT carries a `sid` claim; the `sessions` collection holds `last_activity_at`. Idle longer than `SESSION_IDLE_TIMEOUT_MINUTES` (30) or older than `SESSION_ABSOLUTE_TIMEOUT_HOURS` (12) → 401 with `detail.code` = `session_expired` (or `session_revoked` after logout). Do **not** add background API polling — it would keep idle sessions alive and defeat automatic logoff. Legacy tokens without `sid` are rejected (`relogin_required`); users sign in once after deploy.
+- **Never count idle ticks in the browser**: background tabs throttle `setInterval` to ~1/min. `frontend/src/lib/useIdleTimeout.ts` computes elapsed from a timestamp and recomputes on `visibilitychange` — do not rewrite it as a decrementing counter.
 - **Softmax temperature 5.0 is calibration debt**: softens synthetic-training logits. Tune on real held-out data before clinical use (`MODEL_SOFTMAX_TEMPERATURE`).
 - **In-memory rate limits** (login/register/predict): per-process only. Running multiple uvicorn workers or restarting resets them — move to Redis before scaling horizontally.
 - **Multimodal trainer drops categoricals**: `backend/training/trainer.py:61,95` hardcode `categorical_indices = []`. Only the standalone `train_tabular.py` path is correct (22 cats + 7 nums, which is what `tabular_best.pt` used).

@@ -26,12 +26,13 @@ Status legend: ✅ done · 🔶 partial · ⛔ blocked (needs labeled real data)
 |---|---|---|
 | JWT auth + bcrypt + role hierarchy | ✅ | admin > doctor > viewer; role read fresh from DB |
 | Login/register/prediction throttles | ✅ | **In-memory, per-process** — move to Redis before multi-worker/HA |
+| Automatic logoff on idle (HIPAA §164.312(a)(2)(iii)) | ✅ | Server-enforced sliding sessions (`sid` + `sessions` collection), 30-min idle / 12-h absolute, explicit "Stay signed in" warning; logout revokes server-side |
 | Input validation (bounds, charset, NoSQL keys) | ✅ | Pydantic schemas; patient_id URL-safe charset |
 | Security headers + optional HTTPS enforcement | ✅ | Set `ENFORCE_HTTPS=true` + `BEHIND_PROXY=true` in prod |
 | CORS pinned (no wildcard) | ✅ | Explicit origins + Vercel preview regex |
 | Compose secrets required (no defaults) | ✅ | `JWT_SECRET`/`MONGO_PASSWORD` must be set |
 | PHI never committed / baked into images | ✅ | `data/raw/` gitignored + dockerignored; verified |
-| Token storage hardening (httpOnly cookie / refresh rotation) | ❌ | JWT currently in localStorage (XSS-exposed). Short-lived + refresh is the fix |
+| Token storage hardening (httpOnly cookie / refresh rotation) | 🔶 | Idle logoff + server-side revocation done; JWT still in `localStorage` — httpOnly cookie + refresh-token rotation remain |
 | Invite-only registration (no open doctor signup) | ❌ | Currently anyone can register as doctor |
 | Dependency/SCA scanning in CI | ❌ | Add `pip-audit` + Dependabot |
 | Rate limiting on export/list endpoints | 🔶 | List clamped (max 200); export capped at 10k rows; no per-user throttle |

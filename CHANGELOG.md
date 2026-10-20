@@ -3,6 +3,43 @@
 Notable changes to the Intubation_Project. Format follows
 [Keep a Changelog](https://keepachangelog.com/); entries grouped by date.
 
+## 2026-10-20 — Session idle logout (automatic sign-out)
+
+### Backend
+- **Server-enforced sliding sessions**: every JWT carries a `sid` claim; the
+  new `sessions` collection tracks `created_at` / `last_activity_at` /
+  `revoked_at`. `get_current_user` rejects missing, revoked, idle-expired
+  (`SESSION_IDLE_TIMEOUT_MINUTES`, default 30) and absolute-expired
+  (`SESSION_ABSOLUTE_TIMEOUT_HOURS`, default 12) sessions with typed 401
+  details — `session_expired` / `session_revoked` / `relogin_required`.
+- Activity-touch writes are throttled (`SESSION_TOUCH_INTERVAL_SECONDS`,
+  default 60) so an active request stream does not write on every call.
+- New `POST /api/auth/logout` (idempotent revoke — logout now actually
+  invalidates the token server-side, not just local storage) and
+  `POST /api/auth/heartbeat` (explicit "stay signed in" touch). Login now
+  returns `expires_at`, `idle_timeout_seconds`, `warning_seconds`.
+- JWT lifetime is capped by the absolute session timeout.
+- Legacy tokens without `sid` are rejected — existing users sign in once
+  after deploy.
+- 13 new tests (`tests/test_sessions.py`): session state machine (idle /
+  absolute / revoked / missing / naive-UTC), touch throttle, `sid`+`iat`
+  claims, expiry capping.
+
+### Frontend
+- `useIdleTimeout` hook + `SessionWarningModal`: idle elapsed is computed from
+  a timestamp (background tabs throttle `setInterval` to ~1/min, so ticks must
+  never be counted), 2-minute warning with countdown and explicit
+  "Stay signed in" (heartbeat) / "Log out" buttons, immediate recompute on
+  `visibilitychange`, cross-tab logout via `storage` events, and centralized
+  401 `session_expired` / `session_revoked` handling in `apiFetch`.
+- Login page shows "signed out after a period of inactivity" on `?reason=idle`.
+- Local demo mode (localhost) is exempt from idle enforcement.
+
+### Note
+This satisfies the HIPAA-style automatic-logoff expectation
+(§164.312(a)(2)(iii)). Token storage is still `localStorage` — httpOnly
+cookies / refresh-token rotation remain separate production work.
+
 ## 2026-10-20 — Production hardening + repo reorganization (dashboard-redesign)
 
 ### Repo organization
