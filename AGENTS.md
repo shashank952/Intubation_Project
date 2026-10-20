@@ -5,7 +5,7 @@ Multimodal difficult airway prediction (3-class: Easy/Moderate/Difficult).
 
 ## Source of truth
 
-- `project_plan.md` — design doc
+- `docs/project_plan.md` — design doc
 - `configs/train_config.yaml` — hyperparams for the multimodal `Trainer` only (NOT loaded by standalone tabular/xgb/rf scripts)
 - `.env.example` — all env vars (`MONGO_URL`, `JWT_SECRET`, `OLLAMA_URL`, `LLM_MODEL`, `MODEL_CHECKPOINT`, `MODEL_DEVICE`)
 
@@ -69,7 +69,7 @@ No Makefile, no `pyproject.toml`, no pre-commit, no `pytest` (see "Tests" below)
 - **Ollama is non-blocking but silently falls back**: `llm_assistant.py` returns the canned string in `_call_ollama` exceptions; the API always 200s. If the LLM feature "stopped working", check the Ollama container first.
 - **GPU constraint**: 4GB VRAM (GTX 1650 Ti). `MODEL_DEVICE=cpu` is the default in `docker-compose.yml` and `.env.example`; switch to `cuda` only for local training.
 - **Docker volumes are host absolute paths** (`D:/mongodb/data`, `D:/ollama/models`) — breaks on non-Windows. Edit `docker-compose.yml` before running on Linux/macOS.
-- **Compose container name for seeding**: `<project-prefix>-api-1`, e.g. `minor_project-api-1` (from `deploy-docs.md`). `<api-container>` placeholder in older docs is wrong.
+- **Compose container name for seeding**: `<project-prefix>-api-1`, e.g. `minor_project-api-1` (from `docs/deploy-docs.md`). `<api-container>` placeholder in older docs is wrong.
 
 ## CI (`.github/workflows/deploy.yml`)
 

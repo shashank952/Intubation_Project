@@ -1,0 +1,66 @@
+flowchart TD
+  subgraph CLIENTS["Clients"]
+    WEB["Web Dashboard<br/>(Next.js - repo root src/)"]
+    MOB["Mobile App<br/>(Expo - mobile/)"]
+  end
+
+  subgraph API["FastAPI backend (backend/deploy/) - every call requires Bearer JWT"]
+    AUTH["POST /api/auth/login<br/>bcrypt verify -> JWT {sub, role}"]
+    ME["GET /api/auth/me"]
+    PAT["POST /api/patients"]
+    PRED["POST /api/predictions<br/>(role: doctor)"]
+    LIST["GET /api/predictions"]
+    REP["GET /api/predictions/{id}/report"]
+    DEL["DELETE /api/predictions/{id}<br/>(role: admin)"]
+    ST["GET /api/llm/status"]
+    CSV["GET /api/predictions/export/csv"]
+  end
+
+  subgraph ML["ML service - TabTransformer (backend/models + model_loader)"]
+    PREP["_prepare_input<br/>30 input fields -> 7 numerical (StandardScaler from tabular_scaler.pkl)<br/>+ 22 categorical (indexed as ints)"]
+    INFER["TabularModel.forward -> softmax(probs / T=5)<br/>-> probabilities + argmax class + confidence"]
+    RISK["risk_score = weighted sum of probabilities<br/>(Easy 0 / Moderate 50 / Difficult 100)"]
+  end
+
+  subgraph LLMS["LLM service - OpenRouter (Qwen 2.5 72B)"]
+    GEN["Clinical summary + recommendations generated<br/>from patient profile + probabilities"]
+    FB["Canned fallback text when LLM unreachable<br/>(report_sources = fallback)"]
+  end
+
+  subgraph MONGO["MongoDB - airway_db (async Motor)"]
+    USERS[(users)]
+    PATS[(patients)]
+    PREDS[(predictions)]
+    REPORTS[(llm_reports)]
+  end
+
+  WEB --> AUTH
+  MOB --> AUTH
+  AUTH -->|store bcrypt hash| USERS
+  AUTH --> USERS
+  WEB --> ME
+  ME --> USERS
+  WEB --> PAT
+  MOB --> PAT
+  PAT -->|insert patient| PATS
+  WEB --> PRED
+  MOB --> PRED
+  PRED -->|lookup patient_id| PATS
+  PRED --> PREP
+  PREP --> INFER
+  INFER --> RISK
+  INFER --> GEN
+  GEN --> FB
+  PRED -->|insert prediction doc| PREDS
+  PRED -->|insert summary + recommendations| REPORTS
+  WEB --> LIST
+  LIST -->|query sorted by created_at desc| PREDS
+  WEB --> REP
+  MOB --> REP
+  REP -->|query by prediction_id| REPORTS
+  WEB --> DEL
+  DEL -->|delete prediction + its report| PREDS
+  DEL --> REPORTS
+  WEB --> CSV
+  CSV -->|stream rows| PREDS
+  ST --> GEN

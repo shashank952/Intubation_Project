@@ -1,0 +1,53 @@
+sequenceDiagram
+  autonumber
+  participant B as Browser (Next.js)
+  participant A as FastAPI backend
+  participant M as MongoDB (Motor)
+  participant T as TabTransformer model
+  participant L as OpenRouter LLM (Qwen 2.5 72B)
+
+  rect rgb(255, 247, 214)
+  Note over B,L: AUTH
+  B->>A: POST /api/auth/login {email, password}
+  A->>M: find user by email
+  M-->>A: user record (hashed password)
+  A->>A: bcrypt verify -> JWT {sub, role}
+  A-->>B: 200 {access_token, user}
+  B->>B: store token + user in localStorage
+  end
+
+  rect rgb(229, 245, 229)
+  Note over B,L: NEW ASSESSMENT (dashboard submit)
+  B->>A: POST /api/patients (patient data)
+  A->>M: insert patient
+  M-->>A: patient saved
+
+  B->>A: POST /api/predictions (30 fields) + Bearer JWT
+  Note over A: require_role("doctor") -> 403 if not
+  A->>M: find patient by patient_id
+  M-->>A: patient (404 if missing)
+  A->>A: _prepare_input: 7 numerical scaled + 22 categorical indexed
+  A->>T: forward(numerical, categorical) [no_grad]
+  T-->>A: logits -> softmax(T=5) -> probs, class, confidence
+  A->>A: risk_score = weighted sum of probs
+  A->>M: insert predictions doc
+  A->>L: asyncio.to_thread -> summary + recommendations prompts
+  L-->>A: bullet text (or fallback if unreachable)
+  A->>M: insert llm_reports doc
+  A-->>B: {prediction, clinical_summary, recommendations, report_sources}
+  B-->>B: render RiskPredictionCard gauge + AI assessment
+  end
+
+  rect rgb(221, 238, 255)
+  Note over B,L: READING HISTORY / REPORTS
+  B->>A: GET /api/predictions (list)
+  A->>M: find predictions sorted by created_at desc
+  M-->>A: history documents
+  A-->>B: PredictionHistory[] (renders MiniHistory, StatsCard, table)
+
+  B->>A: GET /api/predictions/{id}/report
+  A->>M: find llm_reports by prediction_id
+  M-->>A: report document
+  A-->>B: {summary, recommendations, sources}
+  B-->>B: render AiClinicalAssessment / Reports page
+  end

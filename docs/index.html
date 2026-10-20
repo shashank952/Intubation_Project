@@ -1,0 +1,2479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Airway MD — Project Documentation &amp; Workflow</title>
+<style>
+  /* ============================================================
+     NEO-BRUTALISM DESIGN TOKENS
+     Thick black borders + hard offset shadows + flat loud colors.
+     ============================================================ */
+  :root{
+    --black:#111111;
+    --cream:#F5F1DC;
+    --paper:#FFFFFF;
+    --yellow:#FFE066;
+    --yellow-deep:#FFD21F;
+    --pink:#FF6BD6;
+    --magenta:#FF00D9;
+    --cyan:#57E6E6;
+    --blue:#7CC5FF;
+    --lime:#B8F15A;
+    --green:#57D977;
+    --orange:#FF9F45;
+    --red:#FF5D5D;
+    --purple:#C6A0FF;
+    --grey:#E7E3D4;
+    --ink-soft:#5b5642;
+    --radius:6px;
+    --border:3px solid var(--black);
+    --shadow:8px 8px 0 var(--black);
+    --shadow-sm:4px 4px 0 var(--black);
+    --mono:"JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+    --body:"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --display:"Playfair Display", Georgia, "Times New Roman", serif;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background-color:var(--cream);
+    background-image:
+      linear-gradient(rgba(17,17,17,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(17,17,17,.045) 1px, transparent 1px);
+    background-size:26px 26px;
+    color:var(--black);
+    font-family:var(--body);
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 18px 90px;}
+
+  /* ---------- Typography ---------- */
+  h1,h2,h3,h4{line-height:1.1;margin:0 0 .5em;letter-spacing:-.01em;}
+  h1{font-family:var(--display);font-size:clamp(2.3rem,6vw,4rem);font-weight:900;}
+  h2{font-family:var(--display);font-size:clamp(1.7rem,3.6vw,2.6rem);font-weight:900;}
+  h3{font-size:1.28rem;font-weight:800;}
+  h4{font-size:1.02rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;}
+  p{margin:0 0 1em;}
+  a{color:inherit;text-decoration:none;}
+  code,pre,.mono{font-family:var(--mono);}
+  .lead{font-size:1.12rem;color:var(--ink-soft);}
+  .eyebrow{
+    display:inline-block;font-family:var(--mono);font-weight:700;font-size:.72rem;
+    letter-spacing:.22em;text-transform:uppercase;background:var(--black);color:var(--yellow);
+    padding:5px 12px;border:var(--border);box-shadow:var(--shadow-sm);margin-bottom:16px;
+  }
+
+  /* ---------- Hero ---------- */
+  header.hero{
+    background:var(--yellow);
+    border-bottom:var(--border);
+    padding:52px 18px 44px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero-inner{max-width:1180px;margin:0 auto;position:relative;z-index:2;}
+  .hero .stethoscope{
+    width:70px;height:70px;background:var(--black);color:#fff;display:flex;align-items:center;
+    justify-content:center;border:var(--border);box-shadow:var(--shadow);font-size:34px;margin-bottom:20px;
+    transform:rotate(-4deg);
+  }
+  .hero p.lead{max-width:760px;color:#3a3623;font-weight:500;}
+  .hero-blobs{position:absolute;inset:0;z-index:1;pointer-events:none;}
+  .blob{position:absolute;border:var(--border);border-radius:50%;opacity:.9;}
+  .blob.b1{width:260px;height:260px;background:var(--pink);right:-70px;top:-90px;}
+  .blob.b2{width:170px;height:170px;background:var(--cyan);right:180px;bottom:-100px;}
+  .badges{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+  .badge{
+    font-family:var(--mono);font-size:.74rem;font-weight:700;text-transform:uppercase;
+    background:var(--paper);border:var(--border);padding:6px 12px;box-shadow:var(--shadow-sm);
+  }
+
+  /* ---------- Sections ---------- */
+  section{margin-top:56px;}
+  .card{
+    background:var(--paper);border:var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:26px;margin-bottom:26px;
+  }
+  .card.flat{box-shadow:none;}
+  .card.tint-yellow{background:var(--yellow);}
+  .card.tint-cyan{background:var(--cyan);}
+  .card.tint-lime{background:var(--lime);}
+  .card.tint-pink{background:#FFDDF4;}
+  .card.tint-grey{background:var(--grey);}
+  .card h3{display:flex;align-items:center;gap:10px;}
+  .card h3 .num{
+    font-family:var(--mono);background:var(--black);color:var(--yellow);font-size:.9rem;
+    width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;
+    border-radius:var(--radius);flex-shrink:0;
+  }
+
+  /* ---------- Grid helpers ---------- */
+  .grid{display:grid;gap:20px;}
+  .g2{grid-template-columns:repeat(2,1fr);}
+  .g3{grid-template-columns:repeat(3,1fr);}
+  .g4{grid-template-columns:repeat(4,1fr);}
+  @media(max-width:900px){.g3,.g4{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr;}}
+
+  .stat{
+    background:var(--paper);border:var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);padding:18px;text-align:center;
+  }
+  .stat .big{font-family:var(--mono);font-size:2.1rem;font-weight:800;display:block;}
+  .stat .lbl{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);}
+  .stat.c-black{background:var(--black);color:var(--yellow);}
+  .stat.c-black .lbl{color:#e9e0a8;}
+
+  /* ---------- Pills / tags ---------- */
+  .pill{
+    display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:700;
+    padding:3px 10px;border:2px solid var(--black);border-radius:999px;margin:3px 4px 3px 0;
+    background:var(--paper);
+  }
+  .pill.y{background:var(--yellow);}
+  .pill.g{background:var(--green);}
+  .pill.o{background:var(--orange);}
+  .pill.r{background:var(--red);color:#fff;}
+  .pill.c{background:var(--cyan);}
+  .pill.p{background:var(--purple);}
+
+  /* ---------- Tables ---------- */
+  table{width:100%;border-collapse:collapse;margin:6px 0 4px;font-size:.9rem;}
+  th,td{border:2px solid var(--black);padding:9px 11px;text-align:left;vertical-align:top;}
+  th{background:var(--black);color:var(--yellow);font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;font-family:var(--mono);}
+  tbody tr:nth-child(even){background:rgba(0,0,0,.035);}
+  td code{background:var(--grey);padding:1px 5px;border-radius:3px;font-size:.82rem;}
+
+  /* ---------- Flow diagrams (CSS) ---------- */
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:18px 0;}
+  .node{
+    flex:1 1 150px;min-width:130px;background:var(--paper);border:var(--border);
+    border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:12px;text-align:center;
+  }
+  .node .t{font-weight:800;font-size:.88rem;}
+  .node .s{font-size:.74rem;color:var(--ink-soft);font-family:var(--mono);}
+  .node.k{background:var(--yellow);}
+  .node.c{background:var(--cyan);}
+  .node.l{background:var(--lime);}
+  .node.p{background:var(--pink);}
+  .node.b{background:var(--blue);}
+  .node.o{background:var(--orange);}
+  .arrow{
+    align-self:center;flex:0 0 auto;font-size:1.5rem;font-weight:900;padding:0 8px;color:var(--black);
+  }
+  .flow.col{flex-direction:column;}
+  .flow.col .arrow{transform:rotate(90deg);padding:4px 0;}
+  @media(max-width:700px){
+    .flow.rows{flex-direction:column;}
+    .flow.rows .arrow{transform:rotate(90deg);}
+  }
+
+  /* ---------- Callouts ---------- */
+  .callout{border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:16px 18px;margin:16px 0;background:var(--paper);}
+  .callout .tag{font-family:var(--mono);font-weight:800;font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;display:block;margin-bottom:6px;}
+  .callout.warn{background:#FFE8C7;}
+  .callout.warn .tag{color:#8a4b00;}
+  .callout.info{background:#DFF6FF;}
+  .callout.info .tag{color:#00527a;}
+  .callout.good{background:#DEF7D6;}
+  .callout.good .tag{color:#1c6a2a;}
+  .callout.bad{background:#FFDCDC;}
+  .callout.bad .tag{color:#8a1010;}
+
+  /* ---------- Code blocks ---------- */
+  pre{
+    background:var(--black);color:#F8F5E4;border:var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);padding:16px 18px;overflow-x:auto;font-size:.84rem;line-height:1.55;
+  }
+  pre .cm{color:#9fbf8f;}
+  pre .kw{color:#FFD21F;}
+  pre .st{color:#FF9F45;}
+
+  /* ---------- Formula panel ---------- */
+  .formula{
+    background:var(--black);color:#F8F5E4;border-radius:var(--radius);padding:20px;font-family:var(--mono);
+    font-size:1rem;border:var(--border);box-shadow:var(--shadow-sm);overflow-x:auto;
+  }
+  .formula b{color:var(--yellow);}
+
+  /* ---------- Diagram frame (SVG) ---------- */
+  .diagram{
+    background:var(--paper);border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:14px;overflow-x:auto;
+  }
+  .diagram svg{display:block;width:100%;height:auto;min-width:640px;}
+
+  /* ---------- TOC ---------- */
+  .toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px;}
+  .toc a{
+    display:block;background:var(--paper);border:var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);padding:12px 14px;font-weight:700;font-size:.9rem;
+    transition:transform .06s ease, box-shadow .06s ease, background .1s;
+  }
+  .toc a:hover{background:var(--yellow);transform:translate(2px,2px);box-shadow:2px 2px 0 var(--black);}
+  .toc a span{display:block;font-family:var(--mono);font-size:.68rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.1em;}
+
+  /* ---------- Risk meter demo ---------- */
+  .meter{display:flex;gap:0;border:var(--border);border-radius:var(--radius);overflow:hidden;height:38px;box-shadow:var(--shadow-sm);}
+  .meter div{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.78rem;font-weight:800;color:#fff;}
+  .meter .m-easy{background:var(--green);}
+  .meter .m-mod{background:var(--orange);}
+  .meter .m-diff{background:var(--red);}
+
+  footer{
+    background:var(--black);color:var(--yellow);border-top:var(--border);
+    padding:30px 18px;text-align:center;font-family:var(--mono);font-size:.82rem;
+  }
+  footer a{color:#fff;text-decoration:underline;}
+
+  .grid-2col{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;}
+  @media(max-width:860px){.grid-2col{grid-template-columns:1fr;}}
+
+  hr.rule{border:none;border-top:3px dashed var(--black);margin:34px 0;opacity:.5;}
+  .muted{color:var(--ink-soft);font-size:.9rem;}
+  .kbd{font-family:var(--mono);font-size:.78rem;background:var(--black);color:var(--yellow);border-radius:4px;padding:2px 7px;}
+</style>
+</head>
+<body>
+
+<!-- ============================ HERO ============================ -->
+<header class="hero">
+  <div class="hero-blobs" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+  </div>
+  <div class="hero-inner">
+    <div class="stethoscope">⚕</div>
+    <span class="eyebrow">Project Documentation · v2.0.0</span>
+    <h1>Airway MD</h1>
+    <p class="lead">
+      A <strong>clinical decision-support tool</strong> that predicts how hard it will be to
+      place a breathing tube (intubation) into a patient <em>before</em> the operation. It reads
+      <strong>30 clinical measurements</strong>, runs them through a trained
+      <strong>machine-learning model</strong>, and returns a risk class —
+      <strong>Easy</strong>, <strong>Moderate</strong>, or <strong>Difficult</strong> —
+      plus an AI-written explanation for the anesthesiologist.
+    </p>
+    <div class="badges">
+      <span class="badge">Multimodal · 3-Class</span>
+      <span class="badge">PyTorch TabTransformer</span>
+      <span class="badge">FastAPI + MongoDB</span>
+      <span class="badge">Next.js 14 + Tailwind</span>
+      <span class="badge">LLM Assistant</span>
+      <span class="badge">Docker + CI/CD</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============================ TOC ============================ -->
+  <section id="toc" style="margin-top:40px;">
+    <div class="card tint-grey">
+      <h3><span class="num">→</span> What is inside this document</h3>
+      <p class="muted">Click any card to jump to that part of the story.</p>
+      <div class="toc">
+        <a href="#overview"><span>01</span>The Big Picture</a>
+        <a href="#architecture"><span>02</span>System Architecture</a>
+        <a href="#dataset"><span>03</span>The Dataset</a>
+        <a href="#inputs"><span>04</span>Input Criteria (30 Fields)</a>
+        <a href="#preprocessing"><span>05</span>Data Preprocessing</a>
+        <a href="#ml"><span>06</span>ML Models &amp; How They Work</a>
+        <a href="#transformer"><span>06b</span>Inside the Transformer</a>
+        <a href="#risk"><span>07</span>How the Risk Score is Computed</a>
+        <a href="#ai"><span>08</span>How the AI Assistant Works</a>
+        <a href="#backend"><span>09</span>Backend &amp; APIs</a>
+        <a href="#frontend"><span>10</span>Frontend &amp; Connection</a>
+        <a href="#workflow"><span>11</span>End-to-End Workflow</a>
+        <a href="#deploy"><span>12</span>How It Is Deployed</a>
+        <a href="#design"><span>13</span>Why It Looks Like This</a>
+        <a href="#stack"><span>14</span>Tech Stack Summary</a>
+        <a href="#hld"><span>15</span>High-Level System Design</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 01 OVERVIEW ============================ -->
+  <section id="overview">
+    <span class="eyebrow">01 · The Big Picture</span>
+    <h2>What problem does this solve?</h2>
+    <div class="grid-2col">
+      <div class="card">
+        <h3><span class="num">?</span> The clinical problem</h3>
+        <p>
+          When a patient is put to sleep for surgery, a doctor (anesthesiologist) must slide a
+          plastic tube into the windpipe so the patient can breathe. Sometimes this is easy,
+          sometimes it is <strong>very difficult</strong> — and a difficult airway that is not
+          predicted can be life-threatening.
+        </p>
+        <p>
+          Today this judgement relies on the doctor's experience and a handful of bedside tests.
+          This project turns those tests into data and uses a machine-learning model to give a
+          second opinion: a <strong>risk class</strong> and a <strong>risk percentage</strong>,
+          backed by an AI explanation.
+        </p>
+        <p class="muted"><strong>The output is always 1 of 3 classes:</strong></p>
+        <span class="pill g">🟢 Easy — standard intubation</span>
+        <span class="pill o">🟠 Moderate — use alternatives &amp; a backup plan</span>
+        <span class="pill r">🔴 Difficult — advanced techniques + senior staff</span>
+      </div>
+      <div class="card tint-yellow">
+        <h3><span class="num">✓</span> What was actually built</h3>
+        <ul style="padding-left:18px;margin:0;">
+          <li>A <strong>synthetic dataset</strong> of <strong>2,500 patients</strong> (balanced across the 3 classes).</li>
+          <li>A <strong>TabTransformer</strong> deep-learning model trained on 30 features → <strong>85.9% accuracy / 0.970 AUC</strong>.</li>
+          <li>Two extra baseline models (XGBoost, Random Forest) for comparison.</li>
+          <li>A <strong>FastAPI</strong> backend with login, patient records and predictions.</li>
+          <li>A <strong>Next.js dashboard</strong> where a doctor fills a form and sees the result.</li>
+          <li>An <strong>LLM assistant</strong> that writes a clinical summary and recommendations.</li>
+          <li><strong>Docker + GitHub Actions</strong> so everything can be shipped and re-run.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card flat tint-cyan">
+      <h3><span class="num">i</span> The whole project in one sentence</h3>
+      <p style="margin:0;font-size:1.08rem;">
+        A doctor logs into a web dashboard, types 30 measurements about a patient, and the system
+        returns a <strong>risk score (0–100)</strong>, a <strong>class (Easy/Moderate/Difficult)</strong>,
+        a confidence level, and an <strong>AI-written clinical report</strong> — all stored safely in a
+        database for later review.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================ 02 ARCHITECTURE ============================ -->
+  <section id="architecture">
+    <span class="eyebrow">02 · System Architecture</span>
+    <h2>How the pieces fit together</h2>
+    <p class="lead">
+      The system has four moving parts: a <strong>browser dashboard</strong>, a <strong>Python API</strong>,
+      a <strong>database</strong>, and an <strong>AI (LLM) service</strong>. Here is the complete map.
+    </p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 980 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="System architecture diagram">
+        <defs>
+          <marker id="ah" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 z" fill="#111111"/>
+          </marker>
+          <style>
+            .bx{stroke:#111;stroke-width:3;rx:8;}
+            .lbl{font-family:ui-monospace,monospace;font-weight:800;font-size:15px;fill:#111;}
+            .sub{font-family:monospace;font-size:11px;fill:#5b5642;}
+            .fl{stroke:#111;stroke-width:3;fill:none;marker-end:url(#ah);}
+            .txt{font-family:monospace;font-size:11px;fill:#111;font-weight:700;}
+          </style>
+        </defs>
+
+        <!-- Browser / Frontend -->
+        <rect class="bx" x="330" y="20" width="320" height="86" fill="#FFE066"/>
+        <text class="lbl" x="350" y="52">🖥  NEXT.JS DASHBOARD</text>
+        <text class="sub" x="350" y="72">React · Tailwind · Recharts · Port 3000</text>
+        <text class="sub" x="350" y="90">/dashboard · /history · /reports · /settings</text>
+
+        <!-- arrow down -->
+        <line class="fl" x1="490" y1="106" x2="490" y2="162"/>
+        <text class="txt" x="500" y="140">HTTP + JWT</text>
+
+        <!-- API -->
+        <rect class="bx" x="330" y="162" width="320" height="150" fill="#57E6E6"/>
+        <text class="lbl" x="350" y="194">⚙  FASTAPI BACKEND</text>
+        <text class="sub" x="350" y="214">Python 3.10 · Uvicorn · Port 8000</text>
+        <text class="sub" x="350" y="234">Auth (JWT/bcrypt) · Patients · Predictions</text>
+        <text class="sub" x="350" y="254">Scaler → Model → Softmax → Risk score</text>
+        <text class="sub" x="350" y="274">Prompt builder → LLM report</text>
+        <text class="sub" x="350" y="294">Routers + security headers + CORS</text>
+
+        <!-- left: ML MODEL -->
+        <line class="fl" x1="330" y1="210" x2="196" y2="210"/>
+        <rect class="bx" x="30" y="168" width="166" height="120" fill="#B8F15A"/>
+        <text class="lbl" x="46" y="198">🧠 ML MODEL</text>
+        <text class="sub" x="46" y="218">TabTransformer</text>
+        <text class="sub" x="46" y="236">tabular_best.pt</text>
+        <text class="sub" x="46" y="254">PyTorch · CPU</text>
+        <text class="sub" x="46" y="272">85.9% acc · 0.97 AUC</text>
+
+        <!-- right: LLM -->
+        <line class="fl" x1="650" y1="210" x2="784" y2="210"/>
+        <rect class="bx" x="784" y="168" width="166" height="120" fill="#FF6BD6"/>
+        <text class="lbl" x="800" y="198">✨ LLM SERVICE</text>
+        <text class="sub" x="800" y="218">OpenRouter / Groq</text>
+        <text class="sub" x="800" y="236">Qwen 2.5 72B</text>
+        <text class="sub" x="800" y="254">or Llama-3 70B</text>
+        <text class="sub" x="800" y="272">Clinical text</text>
+
+        <!-- DB -->
+        <line class="fl" x1="490" y1="312" x2="490" y2="372"/>
+        <rect class="bx" x="330" y="372" width="320" height="96" fill="#FF9F45"/>
+        <text class="lbl" x="350" y="404">🗄  MONGODB (airway_db)</text>
+        <text class="sub" x="350" y="424">users · patients · predictions · llm_reports</text>
+        <text class="sub" x="350" y="442">Async driver: Motor · Port 27017</text>
+        <text class="sub" x="350" y="460">Indexes on patient_id, email, created_at</text>
+
+        <!-- data source -->
+        <rect class="bx" x="330" y="510" width="150" height="80" fill="#E7E3D4"/>
+        <text class="lbl" x="346" y="540">📊 DATASET</text>
+        <text class="sub" x="346" y="558">2,500 rows</text>
+        <text class="sub" x="346" y="574">30 features</text>
+        <line class="fl" x1="405" y1="510" x2="405" y2="468" stroke-dasharray="6 5"/>
+        <text class="txt" x="414" y="490">offline training</text>
+
+        <rect class="bx" x="520" y="510" width="150" height="80" fill="#E7E3D4"/>
+        <text class="lbl" x="536" y="540">🏋 TRAINING</text>
+        <text class="sub" x="536" y="558">train_tabular.py</text>
+        <text class="sub" x="536" y="574">xgb · rf scripts</text>
+        <line class="fl" x1="595" y1="510" x2="595" y2="468" stroke-dasharray="6 5"/>
+        <text class="txt" x="604" y="490">produces .pt</text>
+      </svg>
+    </div>
+
+    <div class="grid g3" style="margin-top:22px;">
+      <div class="stat c-black"><span class="big">:3000</span><span class="lbl">Frontend</span></div>
+      <div class="stat"><span class="big">:8000</span><span class="lbl">Backend API</span></div>
+      <div class="stat"><span class="big">:27017</span><span class="lbl">MongoDB</span></div>
+    </div>
+
+    <div class="callout info">
+      <span class="tag">In plain English</span>
+      The browser never talks to the model or the database directly. It only talks to the
+      <strong>FastAPI backend</strong>, which is the single "control room". The backend checks who you
+      are, talks to MongoDB for storage, runs the ML model in memory, and calls the LLM for the written report.
+    </div>
+  </section>
+
+  <!-- ============================ 03 DATASET ============================ -->
+  <section id="dataset">
+    <span class="eyebrow">03 · The Dataset</span>
+    <h2>What data is the model trained on?</h2>
+
+    <div class="grid g4">
+      <div class="stat c-black"><span class="big">2,500</span><span class="lbl">Patient rows</span></div>
+      <div class="stat"><span class="big">31</span><span class="lbl">Columns</span></div>
+      <div class="stat"><span class="big">30</span><span class="lbl">Input features</span></div>
+      <div class="stat"><span class="big">3</span><span class="lbl">Balanced classes</span></div>
+    </div>
+
+    <div class="grid-2col" style="margin-top:22px;">
+      <div class="card">
+        <h3><span class="num">📄</span> File &amp; shape</h3>
+        <p>
+          The training data lives in <code>dataset.xlsx</code> (also kept under <code>DATASET/</code>).
+          Each <strong>row = one patient</strong>. There are 30 feature columns plus an
+          <code>Patient_ID</code> identifier and a <code>Target</code> label column.
+        </p>
+        <table>
+          <thead><tr><th>Property</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>Rows (patients)</td><td><strong>2,500</strong></td></tr>
+            <tr><td>Columns</td><td>31 = 1 ID + 30 features + <code>Target</code></td></tr>
+            <tr><td>Numerical features</td><td><strong>7</strong></td></tr>
+            <tr><td>Categorical features</td><td><strong>22</strong> (+ 5 derived categories)</td></tr>
+            <tr><td>Target labels</td><td><code>0 = Easy</code>, <code>1 = Moderate</code>, <code>2 = Difficult</code></td></tr>
+            <tr><td>Origin</td><td><strong>Synthetic</strong> (generated, not real patients)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card tint-lime">
+        <h3><span class="num">⚖</span> Class balance</h3>
+        <p>The three target classes are intentionally near-perfectly balanced — which prevents the
+          model from simply "guessing Easy" for everyone.</p>
+        <div class="meter" style="height:46px;">
+          <div class="m-easy" style="width:33.3%;">Easy 833</div>
+          <div class="m-mod" style="width:33.3%;">Moderate 833</div>
+          <div class="m-diff" style="width:33.4%;">Difficult 834</div>
+        </div>
+        <p class="muted" style="margin-top:12px;">
+          <strong>Why this matters:</strong> in real hospitals, most airways are easy, so a model can
+          get high accuracy while never spotting a hard case. A balanced dataset forces the model to
+          learn all three classes properly.
+        </p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <span class="tag">Important honesty note</span>
+      The dataset is <strong>synthetic</strong> — it was generated by a script
+      (<code>scripts/generate_synthetic_data.py</code>), not collected from real patients. It is built
+      from realistic medical rules and correlations, but the accuracy numbers are therefore a
+      <em>proof of concept</em>, not a certified clinical result. Real deployment would require real,
+      de-identified hospital data.
+    </div>
+
+    <div class="card">
+      <h4>Every column in the dataset</h4>
+      <table>
+        <thead><tr><th>#</th><th>Column</th><th>Type</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>—</td><td><code>Patient_ID</code></td><td>ID</td><td>Unique patient identifier (not used as a feature)</td></tr>
+          <tr><td>1</td><td><code>Gender</code></td><td>Categorical</td><td>Male / Female</td></tr>
+          <tr><td>2</td><td><code>Age</code></td><td>Numerical</td><td>Patient age in years</td></tr>
+          <tr><td>3</td><td><code>Previous_Airway_Records</code></td><td>Categorical</td><td>Any past intubation difficulty noted</td></tr>
+          <tr><td>4</td><td><code>Disease_Arthritis</code></td><td>Categorical</td><td>Rheumatoid/cervical arthritis (stiff neck)</td></tr>
+          <tr><td>5</td><td><code>Disease_Diabetes</code></td><td>Categorical</td><td>Diabetes history</td></tr>
+          <tr><td>6</td><td><code>Disease_Down_Syndrome</code></td><td>Categorical</td><td>Down syndrome (classic difficult-airway risk)</td></tr>
+          <tr><td>7</td><td><code>Breathing_Snoring</code></td><td>Categorical</td><td>Snoring (upper-airway narrowing sign)</td></tr>
+          <tr><td>8</td><td><code>Breathing_Sleep_Apnea</code></td><td>Categorical</td><td>Sleep apnea</td></tr>
+          <tr><td>9</td><td><code>Symptom_Voice_Changes</code></td><td>Categorical</td><td>Hoarse/changed voice</td></tr>
+          <tr><td>10</td><td><code>Symptom_Difficulty_Swallowing</code></td><td>Categorical</td><td>Dysphagia</td></tr>
+          <tr><td>11</td><td><code>Symptom_Cant_Lie_Flat</code></td><td>Categorical</td><td>Cannot lie flat (orthopnea)</td></tr>
+          <tr><td>12</td><td><code>Injury_Swelling</code></td><td>Categorical</td><td>Neck/airway swelling</td></tr>
+          <tr><td>13</td><td><code>Injury_Previous_Neck_Fracture</code></td><td>Categorical</td><td>Past neck fracture</td></tr>
+          <tr><td>14</td><td><code>Previous_Emergencies_ICU</code></td><td>Categorical</td><td>Prior ICU/emergency admissions</td></tr>
+          <tr><td>15</td><td><code>BMI</code></td><td>Numerical</td><td>Body Mass Index</td></tr>
+          <tr><td>16</td><td><code>BMI_Category</code></td><td>Categorical (derived)</td><td>Normal / Overweight / Obese</td></tr>
+          <tr><td>17</td><td><code>Neck_Circumference_cm</code></td><td>Numerical</td><td>Neck thickness</td></tr>
+          <tr><td>18</td><td><code>Beard</code></td><td>Categorical</td><td>Facial hair (can block mask seal)</td></tr>
+          <tr><td>19</td><td><code>Chest_Size</code></td><td>Categorical</td><td>Small / Medium / Large</td></tr>
+          <tr><td>20</td><td><code>Neck_Structure</code></td><td>Categorical</td><td>Normal / Abnormal</td></tr>
+          <tr><td>21</td><td><code>Mouth_Opening_mm</code></td><td>Numerical</td><td>How wide the mouth opens (mm)</td></tr>
+          <tr><td>22</td><td><code>Mallampati_Score</code></td><td>Categorical (ordinal)</td><td>Class I–IV — visibility of throat structures</td></tr>
+          <tr><td>23</td><td><code>Thyromental_Distance_TMD_cm</code></td><td>Numerical</td><td>Chin-to-thyroid distance (cm)</td></tr>
+          <tr><td>24</td><td><code>TMD_Category</code></td><td>Categorical (derived)</td><td>Easy / Medium / Difficult</td></tr>
+          <tr><td>25</td><td><code>Sternomental_Distance_SMD_cm</code></td><td>Numerical</td><td>Chin-to-sternum distance (cm)</td></tr>
+          <tr><td>26</td><td><code>Jaw_Movement</code></td><td>Categorical</td><td>Normal / Reduced</td></tr>
+          <tr><td>27</td><td><code>Neck_Movement_Degrees</code></td><td>Numerical</td><td>Range of neck extension (°)</td></tr>
+          <tr><td>28</td><td><code>Neck_Movement_Category</code></td><td>Categorical (derived)</td><td>Normal / Borderline / Risky</td></tr>
+          <tr><td>29</td><td><code>Tissue_Flexibility</code></td><td>Categorical</td><td>Normal / Reduced</td></tr>
+          <tr><td>30</td><td><code>Target</code></td><td>Label</td><td>0=Easy, 1=Moderate, 2=Difficult</td></tr>
+        </tbody>
+      </table>
+      <p class="muted" style="margin-top:10px;">
+        The 7 <strong>numerical</strong> features are: Age, BMI, Neck_Circumference_cm, Mouth_Opening_mm,
+        Thyromental_Distance_TMD_cm, Sternomental_Distance_SMD_cm, Neck_Movement_Degrees.
+        Everything else is <strong>categorical</strong> (a yes/no or a small set of categories).
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================ 04 INPUTS ============================ -->
+  <section id="inputs">
+    <span class="eyebrow">04 · Input Criteria</span>
+    <h2>What the doctor actually types in</h2>
+    <p class="lead">
+      The form the doctor fills is exactly the model's input. The frontend validates it, and the
+      backend validates it again with Pydantic rules — so bad data (like an age of 400) is rejected
+      twice. Below are the accepted ranges.
+    </p>
+
+    <div class="grid g2">
+      <div class="card">
+        <h4>🔢 Numerical inputs (numbers)</h4>
+        <table>
+          <thead><tr><th>Field</th><th>Unit</th><th>Allowed range</th></tr></thead>
+          <tbody>
+            <tr><td>Age</td><td>years</td><td>0 – 120</td></tr>
+            <tr><td>BMI</td><td>kg/m²</td><td>10 – 60</td></tr>
+            <tr><td>Neck Circumference</td><td>cm</td><td>20 – 60</td></tr>
+            <tr><td>Mouth Opening</td><td>mm</td><td>10 – 80 (default 40)</td></tr>
+            <tr><td>TMD (Thyromental)</td><td>cm</td><td>3 – 12</td></tr>
+            <tr><td>SMD (Sternomental)</td><td>cm</td><td>3 – 20 (default 14)</td></tr>
+            <tr><td>Neck Movement</td><td>degrees</td><td>30 – 180 (default 85)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h4>🏷 Categorical inputs (choices)</h4>
+        <table>
+          <thead><tr><th>Field</th><th>Options</th></tr></thead>
+          <tbody>
+            <tr><td>Gender</td><td>Male / Female</td></tr>
+            <tr><td>Mallampati Score</td><td>Class I / II / III / IV</td></tr>
+            <tr><td>Beard</td><td>Yes / No</td></tr>
+            <tr><td>Chest Size</td><td>Small / Medium / Large</td></tr>
+            <tr><td>Neck Structure</td><td>Normal / Abnormal</td></tr>
+            <tr><td>Jaw Movement</td><td>Normal / Reduced</td></tr>
+            <tr><td>Tissue Flexibility</td><td>Normal / Reduced</td></tr>
+            <tr><td>Previous Airway Records</td><td>Yes / No</td></tr>
+            <tr><td>Diseases</td><td>Arthritis · Diabetes · Down Syndrome (Yes/No each)</td></tr>
+            <tr><td>Breathing</td><td>Snoring · Sleep Apnea (Yes/No each)</td></tr>
+            <tr><td>Symptoms</td><td>Voice Changes · Difficulty Swallowing · Can't Lie Flat</td></tr>
+            <tr><td>Injury</td><td>Swelling · Previous Neck Fracture</td></tr>
+            <tr><td>ICU history</td><td>Previous Emergencies/ICU (Yes/No)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card tint-cyan">
+      <h4>🧮 Automatic derived inputs</h4>
+      <p>Some inputs are not typed by the doctor — the backend calculates them from raw values so the
+        model sees the same categories it was trained on:</p>
+      <div class="flow rows">
+        <div class="node"><div class="t">BMI &lt; 25</div><div class="s">Category 0 · Normal</div></div>
+        <div class="node"><div class="t">25 ≤ BMI &lt; 30</div><div class="s">Category 1 · Overweight</div></div>
+        <div class="node"><div class="t">BMI ≥ 30</div><div class="s">Category 2 · Obese</div></div>
+      </div>
+      <div class="flow rows">
+        <div class="node"><div class="t">TMD ≥ 6.5 cm</div><div class="s">Category 0 · Easy</div></div>
+        <div class="node"><div class="t">6.0 ≤ TMD &lt; 6.5</div><div class="s">Category 1 · Medium</div></div>
+        <div class="node"><div class="t">TMD &lt; 6.0 cm</div><div class="s">Category 2 · Difficult</div></div>
+      </div>
+      <div class="flow rows">
+        <div class="node"><div class="t">Neck ≥ 80°</div><div class="s">Category 0 · Normal</div></div>
+        <div class="node"><div class="t">70° ≤ Neck &lt; 80°</div><div class="s">Category 1 · Borderline</div></div>
+        <div class="node"><div class="t">Neck &lt; 70°</div><div class="s">Category 2 · Risky</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 05 PREPROCESSING ============================ -->
+  <section id="preprocessing">
+    <span class="eyebrow">05 · Data Preprocessing</span>
+    <h2>Turning raw inputs into numbers the model can read</h2>
+    <p class="lead">
+      A neural network only understands numbers. Raw text like <em>"Female"</em> or <em>"Yes"</em>
+      must be converted, and raw numbers like BMI (which range from ~15 to ~50) must be scaled so no
+      single feature dominates.
+    </p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 980 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Preprocessing pipeline">
+        <defs>
+          <marker id="ah2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 z" fill="#111111"/>
+          </marker>
+          <style>
+            .b{stroke:#111;stroke-width:3;rx:8;}
+            .t1{font-family:monospace;font-weight:800;font-size:13.5px;fill:#111;}
+            .t2{font-family:monospace;font-size:10.5px;fill:#5b5642;}
+            .f{stroke:#111;stroke-width:3;fill:none;marker-end:url(#ah2);}
+            .sg{font-family:monospace;font-size:10px;font-weight:700;fill:#111;}
+          </style>
+        </defs>
+
+        <rect class="b" x="20" y="70" width="200" height="120" fill="#E7E3D4"/>
+        <text class="t1" x="36" y="102">RAW INPUT</text>
+        <text class="t2" x="36" y="126">"Female", "Yes",</text>
+        <text class="t2" x="36" y="144">BMI = 32.9,</text>
+        <text class="t2" x="36" y="162">TMD = 6.1,</text>
+        <text class="t2" x="36" y="180">Mallampati = IV</text>
+
+        <line class="f" x1="220" y1="130" x2="270" y2="130"/>
+        <text class="sg" x="223" y="122">encode</text>
+
+        <rect class="b" x="270" y="70" width="210" height="120" fill="#FFE066"/>
+        <text class="t1" x="286" y="102">1 · ENCODE</text>
+        <text class="t2" x="286" y="126">Categorical → integer</text>
+        <text class="t2" x="286" y="144">LabelEncoder per column</text>
+        <text class="t2" x="286" y="162">"Male"=1, "Female"=0</text>
+        <text class="t2" x="286" y="180">Mallampati IV → index 3</text>
+
+        <line class="f" x1="480" y1="130" x2="530" y2="130"/>
+        <text class="sg" x="485" y="122">scale</text>
+
+        <rect class="b" x="530" y="70" width="220" height="120" fill="#57E6E6"/>
+        <text class="t1" x="546" y="102">2 · SCALE</text>
+        <text class="t2" x="546" y="126">StandardScaler on</text>
+        <text class="t2" x="546" y="144">the 7 numerical columns</text>
+        <text class="t2" x="546" y="162">z = (x − μ) / σ → mean 0, std 1</text>
+        <text class="t2" x="546" y="180">saved as tabular_scaler.pkl</text>
+
+        <line class="f" x1="750" y1="130" x2="800" y2="130"/>
+        <text class="sg" x="754" y="122">tensors</text>
+
+        <rect class="b" x="800" y="70" width="160" height="120" fill="#B8F15A"/>
+        <text class="t1" x="816" y="102">MODEL-READY</text>
+        <text class="t2" x="816" y="126">numerical:</text>
+        <text class="t2" x="816" y="144">float32 [7]</text>
+        <text class="t2" x="816" y="162">categorical:</text>
+        <text class="t2" x="816" y="180">long [22]</text>
+      </svg>
+    </div>
+
+    <div class="grid g2" style="margin-top:20px;">
+      <div class="callout good">
+        <span class="tag">Key rule</span>
+        The <strong>same scaler</strong> that was fitted during training is saved to disk
+        (<code>checkpoints/tabular_scaler.pkl</code>) and re-loaded by the API at prediction time.
+        This guarantees the live inputs are scaled <em>exactly</em> like the training inputs — a common
+        bug in ML projects that this one handles correctly.
+      </div>
+      <div class="callout info">
+        <span class="tag">Ordinal vs one-hot</span>
+        Mallampati is <strong>ordinal</strong> (Class I → IV has a natural order), so it is encoded as
+        an ordered integer (0–3). Yes/No and disease flags become simple 0/1 binary values. The
+        TabTransformer then learns its own rich embeddings from these integers.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 06 ML MODELS ============================ -->
+  <section id="ml">
+    <span class="eyebrow">06 · ML Models</span>
+    <h2>Which model runs, and how it works</h2>
+    <p class="lead">
+      Three models were trained on the same data. The <strong>TabTransformer</strong> wins and is the
+      one that actually serves predictions in production. The other two are baselines for comparison.
+    </p>
+
+    <div class="grid g3">
+      <div class="card tint-yellow">
+        <h3>🥇 TabTransformer</h3>
+        <p class="muted">Deep learning · Transformer</p>
+        <p><strong>Accuracy 85.9%</strong><br><strong>AUC-ROC 0.970</strong></p>
+        <p class="mono" style="font-size:.78rem;">checkpoints/tabular_best.pt</p>
+        <span class="pill y">IN PRODUCTION</span>
+      </div>
+      <div class="card tint-cyan">
+        <h3>🥈 XGBoost</h3>
+        <p class="muted">Gradient-boosted trees</p>
+        <p><strong>Accuracy 84.5%</strong><br><strong>AUC-ROC 0.962</strong></p>
+        <p class="mono" style="font-size:.78rem;">checkpoints/xgboost_best.json</p>
+        <span class="pill c">BASELINE</span>
+      </div>
+      <div class="card tint-grey">
+        <h3>🥉 Random Forest</h3>
+        <p class="muted">Ensemble of decision trees</p>
+        <p><strong>Accuracy 81.3%</strong><br><strong>AUC-ROC 0.953</strong></p>
+        <p class="mono" style="font-size:.78rem;">checkpoints/randomforest_best.pkl</p>
+        <span class="pill">BASELINE</span>
+      </div>
+    </div>
+
+    <h3 id="transformer" style="margin-top:34px;">Inside the TabTransformer, visually</h3>
+    <p>
+      The TabTransformer is a neural network designed specifically for <strong>tabular data</strong>
+      (data that sits in a spreadsheet, like this one). Instead of treating every column as a plain
+      number, it learns a rich "embedding" for each categorical value and lets the features
+      <em>talk to each other</em> using <strong>self-attention</strong>.
+    </p>
+    <p class="muted">Five visual stages follow the exact <code>forward()</code> pass. Hover the matrices, click the fields, and use the controls to watch the math move.</p>
+
+    <style id="tx-visual-styles">
+      .tx-wrap{display:flex;flex-direction:column;gap:22px;margin-top:18px;}
+      .tx-jump{display:flex;flex-wrap:wrap;gap:8px;}
+      .tx-jump a{font-family:var(--mono);font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:var(--paper);border:2px solid var(--black);padding:6px 10px;box-shadow:3px 3px 0 var(--black);transition:transform .12s ease,box-shadow .12s ease,background .12s;}
+      .tx-jump a:hover{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--black);background:var(--yellow);}
+      .tx-scroll-hint{display:none;}
+      .tx-stage{margin-top:0;background:var(--paper);border:3px solid var(--black);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;overflow:hidden;}
+      .tx-stage-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;}
+      .tx-badge{font-family:var(--mono);font-weight:800;width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;background:var(--black);color:var(--yellow);border-radius:var(--radius);font-size:.9rem;}
+      .tx-stage h4{text-transform:none;letter-spacing:-.01em;font-size:1.16rem;margin:0;line-height:1.15;}
+      .tx-kicker{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin:4px 0 0;}
+      .tx-caption{color:var(--ink-soft);font-size:.9rem;margin:14px 0 0;}
+      .tx-panel{background:var(--cream);border:2px solid var(--black);border-radius:var(--radius);padding:14px;min-width:0;}
+      .tx-panel-title{font-family:var(--mono);font-weight:800;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+      .tx-grid2{display:grid;grid-template-columns:minmax(0,1.08fr) 44px minmax(0,.92fr);gap:14px;align-items:center;}
+      .tx-arrow-h{position:relative;width:44px;height:3px;background:var(--black);flex:0 0 auto;}
+      .tx-arrow-h::after{content:"";position:absolute;right:-2px;top:-5px;border-left:10px solid var(--black);border-top:6px solid transparent;border-bottom:6px solid transparent;}
+      .tx-arrow-v{position:relative;width:3px;height:34px;background:var(--black);margin:0 auto;}
+      .tx-arrow-v::after{content:"";position:absolute;bottom:-1px;left:-5px;border-top:10px solid var(--black);border-left:6px solid transparent;border-right:6px solid transparent;}
+      .tx-arrow-mid{justify-self:center;}
+      .tx-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+      .tx-tab{font-family:var(--mono);font-size:.66rem;font-weight:800;background:var(--paper);border:2px solid var(--black);padding:5px 8px;cursor:pointer;box-shadow:2px 2px 0 var(--black);}
+      .tx-tab[aria-selected="true"]{background:var(--yellow);transform:translate(2px,2px);box-shadow:none;}
+      .tx-tab:focus-visible,.tx-btn:focus-visible{outline:3px solid var(--magenta);outline-offset:3px;}
+      .tx-emb-wrap{overflow-x:auto;padding-bottom:4px;}
+      .tx-emb-table{display:grid;grid-template-columns:56px repeat(6,36px);gap:2px;font-family:var(--mono);font-size:9.5px;font-variant-numeric:tabular-nums;width:max-content;}
+      .tx-emb-row{display:contents;}
+      .tx-emb-head,.tx-emb-label,.tx-emb-cell{border:1.5px solid var(--black);background:var(--paper);padding:4px 2px;text-align:center;}
+      .tx-emb-head{background:var(--black);color:var(--yellow);font-weight:800;}
+      .tx-emb-label{font-weight:800;background:var(--grey);white-space:nowrap;}
+      .tx-emb-row.is-picked .tx-emb-cell{background:var(--yellow);font-weight:800;}
+      .tx-emb-row.is-picked .tx-emb-label{background:var(--orange);}
+      .tx-lookup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-family:var(--mono);font-size:.72rem;}
+      .tx-code{background:var(--black);color:var(--yellow);padding:3px 7px;border-radius:3px;font-weight:800;}
+      .tx-vec-wrap{margin-top:10px;overflow-x:auto;}
+      .tx-vec{display:flex;gap:2px;width:max-content;}
+      .tx-vec-cell{width:36px;height:34px;border:2px solid var(--black);display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;background:var(--pink);font-variant-numeric:tabular-nums;}
+      .tx-vec-cell.more{background:var(--grey);font-weight:800;}
+      .tx-micro{font-family:var(--mono);font-size:.66rem;color:var(--ink-soft);margin:8px 0 0;}
+      .tx-num-chips{display:flex;flex-wrap:wrap;gap:5px;}
+      .tx-chip{font-family:var(--mono);font-size:.62rem;border:2px solid var(--black);background:var(--paper);padding:4px 6px;}
+      .tx-chip b{display:block;font-size:.56rem;color:var(--ink-soft);text-transform:uppercase;}
+      .tx-pill-node{background:var(--cyan);border:3px solid var(--black);box-shadow:4px 4px 0 var(--black);padding:10px 12px;text-align:center;font-family:var(--mono);font-weight:800;font-size:.76rem;}
+      .tx-single-token{width:46px;height:46px;background:var(--grey);border:3px solid var(--black);box-shadow:4px 4px 0 var(--black);display:grid;place-items:center;margin:0 auto;font-family:var(--mono);font-weight:800;}
+      .tx-token-strip-wrap{margin-top:16px;border-top:3px dashed var(--black);padding-top:14px;}
+      .tx-token-strip-head{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;flex-wrap:wrap;}
+      .tx-shape{background:var(--black);color:var(--yellow);padding:2px 6px;}
+      .tx-token-strip{display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;}
+      .tx-token{width:22px;height:22px;flex:0 0 22px;border:2px solid var(--black);display:grid;place-items:center;font-family:var(--mono);font-size:8px;font-weight:800;}
+      .tx-token.n{background:var(--grey);}
+      .tx-token.c{background:var(--pink);}
+
+      .tx-matrix-equation{display:flex;align-items:center;gap:12px;overflow-x:auto;padding-bottom:8px;}
+      .tx-matrix-box{flex:0 0 auto;background:var(--cream);border:2px solid var(--black);padding:8px;min-width:0;}
+      .tx-matrix-label{font-family:var(--mono);font-size:.66rem;font-weight:800;margin-bottom:6px;white-space:nowrap;}
+      .tx-matrix{display:grid;gap:1px;width:max-content;font-family:var(--mono);font-variant-numeric:tabular-nums;}
+      .tx-matrix-big{grid-template-columns:30px repeat(10,16px) 16px;}
+      .tx-mx-h,.tx-mx-r,.tx-mx-c{border:1px solid var(--black);display:grid;place-items:center;font-size:7.5px;line-height:1;}
+      .tx-mx-h{background:var(--black);color:var(--yellow);font-weight:800;height:14px;}
+      .tx-mx-r{background:var(--grey);font-weight:800;height:14px;font-size:7px;}
+      .tx-mx-c{height:14px;background:var(--paper);}
+      .tx-mx-x .tx-mx-c{background:#fff;}
+      .tx-mx-p .tx-mx-c{background:#EDE4FF;}
+      .tx-mx-out .tx-mx-c{background:var(--lime);}
+      .tx-matrix-big .tx-row-num{background:var(--grey);}
+      .tx-op-big{font-family:var(--mono);font-size:1.5rem;font-weight:900;flex:0 0 auto;}
+      .tx-3d{perspective:900px;}
+      .tx-3d-inner{transform:rotateX(2deg) rotateY(-2deg);transition:transform .45s ease;}
+      .tx-3d:hover .tx-3d-inner{transform:rotateX(6deg) rotateY(-6deg);}
+      .tx-stack3{position:relative;margin:8px 8px 16px 8px;}
+      .tx-stack3::before,.tx-stack3::after{content:"";position:absolute;inset:0;border:3px solid var(--black);border-radius:var(--radius);z-index:0;}
+      .tx-stack3::before{transform:translate(10px,10px);background:var(--yellow);}
+      .tx-stack3::after{transform:translate(20px,20px);background:var(--cyan);}
+      .tx-flowgrid{--tx-rail-gap:70px;position:relative;z-index:1;display:grid;grid-template-columns:58px minmax(0,1fr);grid-template-rows:repeat(11,auto);gap:0 12px;align-items:stretch;background:var(--paper);border:3px solid var(--black);border-radius:var(--radius);box-shadow:4px 4px 0 var(--black);padding:16px;}
+      .tx-rail{grid-column:1;z-index:2;border-left:3px solid var(--black);border-top:3px solid var(--black);border-bottom:3px solid var(--black);border-radius:6px 0 0 6px;margin-right:-12px;position:relative;}
+      .tx-rail-a{grid-row:2 / 5;border-bottom:none;}
+      .tx-rail-b{grid-row:6 / 9;border-bottom:none;}
+      .tx-rail::after{content:none;}
+      .tx-rail-label{position:absolute;left:-26px;top:50%;transform:rotate(-90deg);transform-origin:center;font-family:var(--mono);font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);}
+      .tx-flow-node{border:3px solid var(--black);border-radius:var(--radius);box-shadow:4px 4px 0 var(--black);padding:12px 14px;position:relative;z-index:1;}
+      .tx-flow-node strong{display:block;font-size:.94rem;}
+      .tx-flow-node small{font-family:var(--mono);font-size:.64rem;color:var(--ink-soft);}
+      .tx-node-input{background:var(--grey);}
+      .tx-node-msa{background:var(--pink);}
+      .tx-node-add{background:var(--grey);}
+      .tx-node-add::before{content:"";position:absolute;left:calc(-1 * var(--tx-rail-gap,70px));top:0;width:var(--tx-rail-gap,70px);height:50%;border-left:3px solid var(--black);border-bottom:3px solid var(--black);}
+      .tx-node-add::after{content:"";position:absolute;left:-5px;top:calc(50% - 6px);border-left:10px solid var(--black);border-top:6px solid transparent;border-bottom:6px solid transparent;}
+      .tx-node-ffn{background:var(--cyan);}
+      .tx-node-output{background:var(--lime);}
+      .tx-heads{display:flex;gap:5px;margin:8px 0 6px;flex-wrap:wrap;}
+      .tx-head{font-family:var(--mono);font-size:.6rem;font-weight:800;border:2px solid var(--black);padding:3px 6px;background:var(--paper);}
+      .tx-head:nth-child(1){background:var(--yellow);}
+      .tx-head:nth-child(2){background:var(--cyan);}
+      .tx-head:nth-child(3){background:var(--lime);}
+      .tx-head:nth-child(4){background:var(--purple);}
+      .tx-formula-line{font-family:var(--mono);font-size:.66rem;margin-top:4px;overflow-wrap:anywhere;}
+      .tx-bars{display:flex;flex-direction:column;gap:4px;margin:8px 0;}
+      .tx-bar{height:16px;border:2px solid var(--black);background:var(--paper);font-family:var(--mono);font-size:.58rem;display:flex;align-items:center;padding-left:5px;width:var(--w);min-width:44px;}
+      .tx-bar:nth-child(2){background:var(--yellow);}
+      .tx-stack-label{display:inline-block;font-family:var(--mono);font-size:.6rem;font-weight:800;background:var(--black);color:var(--yellow);padding:3px 7px;margin-bottom:8px;}
+      .tx-attn-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;}
+      .tx-btn{font-family:var(--mono);font-size:.7rem;font-weight:800;text-transform:uppercase;background:var(--yellow);border:3px solid var(--black);box-shadow:3px 3px 0 var(--black);padding:7px 12px;cursor:pointer;}
+      .tx-btn:hover{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--black);}
+      .tx-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:3px 3px 0 var(--black);}
+      .tx-btn.ghost{background:var(--paper);}
+      .tx-attn-status{font-family:var(--mono);font-size:.68rem;color:var(--ink-soft);flex:1 1 240px;min-width:0;}
+      .tx-attn-scroll{overflow-x:auto;padding-bottom:8px;}
+      .tx-attn-flow{display:flex;align-items:center;gap:8px;min-width:760px;}
+      .tx-mini{background:var(--cream);border:2px solid var(--black);padding:8px;flex:0 0 auto;}
+      .tx-mini.is-active{box-shadow:0 0 0 4px var(--yellow);}
+      .tx-mini-title{font-family:var(--mono);font-size:.62rem;font-weight:800;margin-bottom:5px;display:flex;justify-content:space-between;gap:8px;}
+      .tx-mini-name{color:var(--black);}
+      .tx-mini-dim{color:var(--ink-soft);}
+      .tx-mini-note{font-family:var(--mono);font-size:.56rem;text-align:center;margin-top:4px;}
+      .tx-matrix-attn{font-size:.6rem;}
+      .tx-matrix-attn.cols-3{grid-template-columns:24px repeat(3,30px);}
+      .tx-matrix-attn.cols-4{grid-template-columns:24px repeat(4,30px);}
+      .tx-matrix-attn .tx-mx-h,.tx-matrix-attn .tx-mx-r,.tx-matrix-attn .tx-mx-c{height:24px;}
+      .tx-matrix-attn .tx-mx-c{background:var(--paper);transition:background .2s,transform .2s,box-shadow .2s;}
+      .tx-matrix-attn .tx-mx-c.is-row{background:var(--yellow);}
+      .tx-matrix-attn .tx-mx-c.is-col{background:var(--cyan);}
+      .tx-matrix-attn .tx-mx-c.is-hit{background:var(--orange);transform:scale(1.1);box-shadow:0 0 0 2px var(--black);}
+      .tx-op{font-family:var(--mono);font-size:.9rem;font-weight:900;flex:0 0 auto;}
+      .tx-math-callout{margin-top:12px;background:var(--black);color:#F8F5E4;border:3px solid var(--black);padding:12px 14px;font-family:var(--mono);font-size:.74rem;overflow-x:auto;white-space:nowrap;}
+      .tx-math-callout b{color:var(--yellow);}
+      .tx-pool-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+      .tx-pool-tokens{display:grid;grid-template-columns:repeat(12,16px);gap:3px;}
+      .tx-pool-token{width:16px;height:16px;border:1.5px solid var(--black);background:var(--pink);}
+      .tx-pool-token:nth-child(3n){background:var(--cyan);}
+      .tx-pool-token:nth-child(3n+1){background:var(--yellow);}
+      .tx-pool-vector{background:var(--orange);border:3px solid var(--black);box-shadow:4px 4px 0 var(--black);padding:10px 14px;font-family:var(--mono);font-size:.68rem;display:grid;gap:2px;}
+      .tx-pool-vector strong{font-size:1rem;}
+      .tx-linear,.tx-classifier{background:var(--paper);border:3px solid var(--black);box-shadow:4px 4px 0 var(--black);padding:10px 12px;font-family:var(--mono);font-size:.7rem;font-weight:800;}
+      .tx-classifier{background:var(--cyan);}
+      .tx-probs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px;}
+      .tx-prob{border:2px solid var(--black);background:var(--cream);padding:8px;font-family:var(--mono);font-size:.68rem;}
+      .tx-prob b{display:block;text-align:right;}
+      .tx-prob-track{height:18px;border:2px solid var(--black);background:var(--paper);margin:5px 0;overflow:hidden;}
+      .tx-prob-fill{height:100%;width:calc(var(--p)*1%);transition:width .9s cubic-bezier(.2,.7,.2,1);}
+      .tx-prob-fill.easy{background:var(--green);}
+      .tx-prob-fill.mod{background:var(--orange);}
+      .tx-prob-fill.diff{background:var(--red);}
+      .tx-stage.is-visible .tx-prob-fill{animation:tx-fill 1s ease both;}
+      @keyframes tx-fill{from{width:0}to{width:calc(var(--p)*1%)}}
+      .tx-risk{margin-top:12px;font-family:var(--mono);font-size:.7rem;background:var(--black);color:var(--yellow);padding:10px 12px;overflow-x:auto;white-space:nowrap;}
+      .tx-steps{columns:2;column-gap:24px;margin:6px 0 0;padding-left:20px;font-size:.9rem;}
+      .tx-steps li{break-inside:avoid;margin-bottom:7px;}
+      .tx-stage.is-visible{animation:tx-rise .55s ease both;}
+      @keyframes tx-rise{from{opacity:.55;transform:translateY(12px)}to{opacity:1;transform:none}}
+      .tx-stage.is-visible .tx-flow-node{animation:tx-node-pulse 4s ease-in-out infinite;}
+      @keyframes tx-node-pulse{0%,100%{box-shadow:4px 4px 0 var(--black)}50%{box-shadow:4px 4px 0 var(--black),0 0 0 4px rgba(255,224,102,.55)}}
+      .tx-pool-token{animation:tx-token-in .45s ease both;animation-delay:calc(var(--i)*18ms);}
+      @keyframes tx-token-in{from{opacity:.2;transform:translateY(-6px) scale(.8)}to{opacity:1;transform:none}}
+      .tx-stage.is-visible .tx-mx-c{animation:tx-cell-in .4s ease both;animation-delay:calc(var(--i,0)*10ms);}
+      @keyframes tx-cell-in{from{opacity:.25}to{opacity:1}}
+      @media(max-width:900px){
+        .tx-grid2{grid-template-columns:1fr;}
+        .tx-arrow-mid{transform:rotate(90deg);margin:4px auto;}
+        .tx-matrix-equation{flex-direction:column;align-items:center;}
+        .tx-op-big{align-self:center;margin:4px 0;}
+        .tx-pool-row{flex-direction:column;align-items:flex-start;}
+        .tx-pool-row .tx-arrow-h{transform:rotate(90deg);margin-left:70px;}
+      }
+      @media(max-width:900px){.tx-scroll-hint{display:block;}}
+      @media(max-width:640px){
+        .tx-stage{padding:14px;}
+        .tx-flowgrid{--tx-rail-gap:46px;grid-template-columns:38px minmax(0,1fr);padding:10px;gap:0 8px;}
+        .tx-rail{margin-right:-8px;}
+        .tx-rail-label{display:none;}
+        .tx-probs{grid-template-columns:1fr;}
+        .tx-attn-flow{min-width:700px;}
+        .tx-btn{width:100%;}
+        .tx-steps{columns:1;}
+        .tx-token-strip{flex-wrap:wrap;overflow-x:visible;}
+        .tx-risk,.tx-math-callout{white-space:normal;}
+      }
+      @media(prefers-reduced-motion:reduce){
+        .tx-stage.is-visible{animation:none;}
+        .tx-3d-inner{transform:none;}
+        .tx-prob-fill{animation:none;transition:none;}
+        .tx-stage.is-visible .tx-flow-node{animation:none;}
+        .tx-pool-token{animation:none;}
+        .tx-stage.is-visible .tx-mx-c{animation:none;}
+      }
+    </style>
+
+    <div class="tx-wrap">
+      <nav class="tx-jump" aria-label="Transformer visual stages">
+        <a href="#tx-embed">1 · Embeddings</a>
+        <a href="#tx-matrix">2 · Tokens + position</a>
+        <a href="#tx-block">3 · Transformer block</a>
+        <a href="#tx-attention">4 · Attention math</a>
+        <a href="#tx-output">5 · Pool + classify</a>
+      </nav>
+
+      <section class="tx-stage" id="tx-embed" aria-labelledby="tx-embed-title">
+        <header class="tx-stage-head">
+          <span class="tx-badge">1</span>
+          <div>
+            <h4 id="tx-embed-title">Embeddings: values become vectors</h4>
+            <p class="tx-kicker">22 categorical tables + 1 numerical projection</p>
+          </div>
+        </header>
+        <div class="tx-grid2">
+          <div class="tx-panel">
+            <div class="tx-panel-title">Categorical lookup</div>
+            <div class="tx-tabs" id="tx-embed-tabs" role="tablist" aria-label="Categorical fields"></div>
+            <div class="tx-emb-wrap">
+              <div class="tx-emb-table" id="tx-emb-table" role="img" aria-label="One embedding table; the selected row becomes the token"></div>
+            </div>
+            <div class="tx-lookup">
+              <span id="tx-lookup-raw">Female</span>
+              <span aria-hidden="true">→</span>
+              <span class="tx-code" id="tx-lookup-code">0</span>
+              <span>row →</span>
+              <span>64-d vector</span>
+            </div>
+            <div class="tx-vec-wrap">
+              <div class="tx-vec" id="tx-vec" aria-label="Selected embedding vector, first 10 of 64 values"></div>
+            </div>
+            <p class="tx-micro">Each categorical column owns a separate table. Values shown as first 6 of 64 dimensions.</p>
+          </div>
+          <div class="tx-arrow-h tx-arrow-mid" aria-hidden="true"></div>
+          <div class="tx-panel">
+            <div class="tx-panel-title">7 numericals → one token</div>
+            <div class="tx-num-chips" id="tx-num-chips"></div>
+            <div class="tx-arrow-v" aria-hidden="true"></div>
+            <div class="tx-pill-node">nn.Linear(7, 64)</div>
+            <div class="tx-arrow-v" aria-hidden="true"></div>
+            <div class="tx-single-token" aria-label="One numerical token">N</div>
+            <p class="tx-micro">All seven standardized numbers become a single 64-d token — not seven tokens.</p>
+          </div>
+        </div>
+        <div class="tx-token-strip-wrap">
+          <div class="tx-token-strip-head">
+            <span>Final token sequence</span>
+            <span class="tx-shape">[batch, 23, 64]</span>
+          </div>
+          <div class="tx-token-strip" id="tx-token-strip" role="img" aria-label="1 numerical token plus 22 categorical tokens equals 23 tokens"></div>
+          <p class="tx-micro">N = numerical token · C1–C22 = categorical tokens · 1 + 22 = 23 tokens.</p>
+        </div>
+        <p class="tx-caption">Each categorical value picks one row from its own embedding table; that row becomes the column's 64-d token. The seven numerical measurements are projected together into one token, which is why the sequence has 23 tokens rather than 30. Values are illustrative.</p>
+      </section>
+
+      <section class="tx-stage" id="tx-matrix" aria-labelledby="tx-matrix-title">
+        <header class="tx-stage-head">
+          <span class="tx-badge">2</span>
+          <div>
+            <h4 id="tx-matrix-title">The token matrix and positional encoding</h4>
+            <p class="tx-kicker">X + P keeps the same shape</p>
+          </div>
+        </header>
+        <div class="tx-matrix-equation">
+          <div class="tx-matrix-box">
+            <div class="tx-matrix-label">X · token values</div>
+            <div class="tx-matrix tx-matrix-big tx-mx-x" id="tx-mx-x" role="img" aria-label="Token matrix with 23 rows and 64 dimensions"></div>
+          </div>
+          <div class="tx-op-big" aria-hidden="true">+</div>
+          <div class="tx-matrix-box">
+            <div class="tx-matrix-label">P · learned positions</div>
+            <div class="tx-matrix tx-matrix-big tx-mx-p" id="tx-mx-p" role="img" aria-label="Positional encoding matrix with 23 rows and 64 dimensions"></div>
+          </div>
+          <div class="tx-op-big" aria-hidden="true">=</div>
+          <div class="tx-matrix-box tx-3d">
+            <div class="tx-matrix-label">X + P · transformer input</div>
+            <div class="tx-3d-inner">
+              <div class="tx-matrix tx-matrix-big tx-mx-out" id="tx-mx-out" role="img" aria-label="Result matrix with 23 rows and 64 dimensions"></div>
+            </div>
+          </div>
+        </div>
+        <p class="tx-caption">The 23 tokens form a <code>[batch, 23, 64]</code> matrix. A learned positional vector is added element-wise so the model can tell token positions apart. The shape never changes — this is a 3D matrix, tilted slightly on hover. Values are illustrative.</p>
+      </section>
+
+      <section class="tx-stage" id="tx-block" aria-labelledby="tx-block-title">
+        <header class="tx-stage-head">
+          <span class="tx-badge">3</span>
+          <div>
+            <h4 id="tx-block-title">One transformer block, repeated 3×</h4>
+            <p class="tx-kicker">Attention → Add + Norm → FFN → Add + Norm</p>
+          </div>
+        </header>
+        <span class="tx-stack-label">STACKED 3× · EACH BLOCK HAS ITS OWN WEIGHTS</span>
+        <div class="tx-stack3">
+          <div class="tx-flowgrid">
+            <div class="tx-rail tx-rail-a" aria-hidden="true"><span class="tx-rail-label">residual</span></div>
+            <div class="tx-rail tx-rail-b" aria-hidden="true"></div>
+
+            <div class="tx-flow-node tx-node-input" style="grid-column:2;grid-row:1;">
+              <strong>Input X</strong>
+              <small>[B, 23, 64] · tokens + position</small>
+            </div>
+            <div class="tx-arrow-v" style="grid-column:2;grid-row:2;" aria-hidden="true"></div>
+
+            <div class="tx-flow-node tx-node-msa" style="grid-column:2;grid-row:3;">
+              <strong>Multi-Head Self-Attention</strong>
+              <div class="tx-heads" aria-hidden="true">
+                <span class="tx-head">H1</span><span class="tx-head">H2</span><span class="tx-head">H3</span><span class="tx-head">H4</span>
+              </div>
+              <div class="tx-formula-line">Q = XW<sub>Q</sub> · K = XW<sub>K</sub> · V = XW<sub>V</sub></div>
+              <div class="tx-formula-line">4 heads × 16 dims · softmax(QK<sup>T</sup>/√16)V</div>
+            </div>
+            <div class="tx-arrow-v" style="grid-column:2;grid-row:4;" aria-hidden="true"></div>
+
+            <div class="tx-flow-node tx-node-add" style="grid-column:2;grid-row:5;">
+              <strong>Add + LayerNorm 1</strong>
+              <div class="tx-formula-line">x = LayerNorm(x + Attention(x))</div>
+            </div>
+            <div class="tx-arrow-v" style="grid-column:2;grid-row:6;" aria-hidden="true"></div>
+
+            <div class="tx-flow-node tx-node-ffn" style="grid-column:2;grid-row:7;">
+              <strong>Feed-Forward Network · per token</strong>
+              <div class="tx-bars" aria-hidden="true">
+                <div class="tx-bar" style="--w:44%">64</div>
+                <div class="tx-bar" style="--w:100%">256</div>
+                <div class="tx-bar" style="--w:44%">64</div>
+              </div>
+              <div class="tx-formula-line">Linear 64→256 → GELU → Dropout 0.3 → Linear 256→64 → Dropout 0.3</div>
+            </div>
+            <div class="tx-arrow-v" style="grid-column:2;grid-row:8;" aria-hidden="true"></div>
+
+            <div class="tx-flow-node tx-node-add" style="grid-column:2;grid-row:9;">
+              <strong>Add + LayerNorm 2</strong>
+              <div class="tx-formula-line">x = LayerNorm(x + FFN(x))</div>
+            </div>
+            <div class="tx-arrow-v" style="grid-column:2;grid-row:10;" aria-hidden="true"></div>
+
+            <div class="tx-flow-node tx-node-output" style="grid-column:2;grid-row:11;">
+              <strong>Output X</strong>
+              <small>[B, 23, 64] · same shape, refined tokens</small>
+            </div>
+          </div>
+        </div>
+        <p class="tx-caption">Self-attention lets every token compare with all 23 tokens, so interactions like “Mallampati IV + reduced neck movement” are learnable. The residual rails and LayerNorm keep optimization stable; the FFN then processes each token independently. Three identical-shape blocks are stacked, each with its own weights.</p>
+      </section>
+
+      <section class="tx-stage" id="tx-attention" aria-labelledby="tx-attention-title">
+        <header class="tx-stage-head">
+          <span class="tx-badge">4</span>
+          <div>
+            <h4 id="tx-attention-title">Attention math, step by step</h4>
+            <p class="tx-kicker">A 3-token demo of what happens inside every head</p>
+          </div>
+        </header>
+        <div class="tx-attn-controls">
+          <button type="button" class="tx-btn" id="tx-play">Play</button>
+          <button type="button" class="tx-btn ghost" id="tx-next">Next</button>
+          <button type="button" class="tx-btn ghost" id="tx-reset">Reset</button>
+          <div class="tx-attn-status" id="tx-attn-status" aria-live="polite">Press Play or Next to walk through the math.</div>
+        </div>
+        <div class="tx-attn-scroll">
+          <div class="tx-attn-flow">
+            <div class="tx-mini" id="tx-panel-q">
+              <div class="tx-mini-title"><span class="tx-mini-name">Q</span><span class="tx-mini-dim">3&times;4</span></div>
+              <div class="tx-matrix tx-matrix-attn cols-4" id="tx-q" role="img" aria-label="Query matrix, 3 tokens by 4 dimensions"></div>
+            </div>
+            <div class="tx-op" aria-hidden="true">×</div>
+            <div class="tx-mini" id="tx-panel-kt">
+              <div class="tx-mini-title"><span class="tx-mini-name">K<sup>T</sup></span><span class="tx-mini-dim">4&times;3</span></div>
+              <div class="tx-matrix tx-matrix-attn cols-3" id="tx-kt" role="img" aria-label="Transposed key matrix, 4 dimensions by 3 tokens"></div>
+            </div>
+            <div class="tx-op" aria-hidden="true">=</div>
+            <div class="tx-mini" id="tx-panel-scores">
+              <div class="tx-mini-title"><span class="tx-mini-name">QK<sup>T</sup></span><span class="tx-mini-dim">3&times;3</span></div>
+              <div class="tx-matrix tx-matrix-attn cols-3" id="tx-scores" role="img" aria-label="Attention score matrix, 3 by 3"></div>
+              <div class="tx-mini-note">then ÷ √4 = ÷2</div>
+            </div>
+            <div class="tx-op" aria-hidden="true">softmax</div>
+            <div class="tx-mini" id="tx-panel-weights">
+              <div class="tx-mini-title"><span class="tx-mini-name">weights</span><span class="tx-mini-dim">3&times;3</span></div>
+              <div class="tx-matrix tx-matrix-attn cols-3" id="tx-weights" role="img" aria-label="Softmax attention weights, 3 by 3"></div>
+            </div>
+            <div class="tx-op" aria-hidden="true">× V</div>
+            <div class="tx-mini" id="tx-panel-output">
+              <div class="tx-mini-title"><span class="tx-mini-name">output</span><span class="tx-mini-dim">3&times;4</span></div>
+              <div class="tx-matrix tx-matrix-attn cols-4" id="tx-attn-out" role="img" aria-label="Attention output, 3 tokens by 4 dimensions"></div>
+            </div>
+          </div>
+        </div>
+        <p class="tx-micro tx-scroll-hint">Swipe the matrices sideways to see scores, weights and output.</p>
+        <div class="tx-math-callout" id="tx-math-callout"><b>Q · Kᵀ → scores → softmax → ×V</b></div>
+        <p class="tx-caption">Q, K and V all come from the same token matrix. This demo sets K = V = Q and uses 3 tokens &times; 4 dims for readable numbers; the real model learns separate W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> projections, has 23 tokens and 4 heads. QK<sup>T</sup> scores every query against every key; softmax turns each row into weights; multiplying by V produces the attention output.</p>
+      </section>
+
+      <section class="tx-stage" id="tx-output" aria-labelledby="tx-output-title">
+        <header class="tx-stage-head">
+          <span class="tx-badge">5</span>
+          <div>
+            <h4 id="tx-output-title">Pool, classify, and serve</h4>
+            <p class="tx-kicker">From 23 tokens to one clinical decision</p>
+          </div>
+        </header>
+        <div class="tx-pool-row">
+          <div class="tx-pool-tokens" id="tx-pool-tokens" aria-hidden="true"></div>
+          <div class="tx-arrow-h" aria-hidden="true"></div>
+          <div class="tx-pool-vector">
+            <span>mean(dim=1)</span>
+            <strong>64-d</strong>
+          </div>
+          <div class="tx-arrow-h" aria-hidden="true"></div>
+          <div class="tx-linear">Linear 64 → 128</div>
+          <div class="tx-arrow-h" aria-hidden="true"></div>
+          <div class="tx-classifier">Classifier 128 → 128 → 3</div>
+        </div>
+        <div class="tx-probs" aria-label="Example class probabilities">
+          <div class="tx-prob">
+            <span>Easy</span>
+            <div class="tx-prob-track"><div class="tx-prob-fill easy" style="--p:18"></div></div>
+            <b>18%</b>
+          </div>
+          <div class="tx-prob">
+            <span>Moderate</span>
+            <div class="tx-prob-track"><div class="tx-prob-fill mod" style="--p:27"></div></div>
+            <b>27%</b>
+          </div>
+          <div class="tx-prob">
+            <span>Difficult</span>
+            <div class="tx-prob-track"><div class="tx-prob-fill diff" style="--p:55"></div></div>
+            <b>55%</b>
+          </div>
+        </div>
+        <div class="tx-risk">softmax(logits ÷ 5.0) → class = Difficult · risk = (0·18 + 50·27 + 100·55) ÷ 100 = 68.5 / 100</div>
+        <p class="tx-caption">Mean pooling collapses the 23 tokens into one 64-d patient vector. The classifier turns it into three logits; temperature-5 softmax produces probabilities; the router blends them into the risk score used by the dashboard. The percentages shown are an illustrative example.</p>
+      </section>
+
+      <div class="card flat tint-grey" style="margin-bottom:0;">
+        <h4 style="margin-top:0;">Nine steps at a glance</h4>
+        <ol class="tx-steps">
+          <li><strong>Read</strong> 7 numerical + 22 categorical inputs.</li>
+          <li><strong>Preprocess</strong> numericals with StandardScaler, categoricals with LabelEncoder.</li>
+          <li><strong>Tokenize</strong>: project 7 numericals to 1 token; embed 22 categoricals separately.</li>
+          <li><strong>Concatenate</strong> to 23 tokens and add learned positional encoding.</li>
+          <li><strong>Transform</strong> with 3 × (attention → add/norm → FFN → add/norm).</li>
+          <li><strong>Mean-pool</strong> the 23 tokens into one 64-d vector.</li>
+          <li><strong>Project</strong> 64 → 128 with <code>output_proj</code>.</li>
+          <li><strong>Classify</strong> 128 → 128 → 3 logits.</li>
+          <li><strong>Serve</strong>: softmax at T=5, then weighted risk score.</li>
+        </ol>
+      </div>
+
+      <h4 style="margin-top:28px;">Shape tracker (batch of 32 patients)</h4>
+      <table>
+        <thead><tr><th>Stage</th><th>What enters</th><th>What leaves</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Inputs</td><td>30 form fields</td><td>1 × <code>[32, 7]</code> + 22 × <code>[32]</code></td></tr>
+          <tr><td>2 · Tokens</td><td><code>[32, 7]</code> + 22 indices</td><td><code>[32, 1, 64]</code> + 22 × <code>[32, 1, 64]</code></td></tr>
+          <tr><td>3 · Concatenate</td><td>1 numerical + 22 categorical tokens</td><td><code>[32, 23, 64]</code></td></tr>
+          <tr><td>4 · Positional</td><td><code>[32, 23, 64]</code></td><td><code>[32, 23, 64]</code></td></tr>
+          <tr><td>5 · Block ×3</td><td><code>[32, 23, 64]</code></td><td><code>[32, 23, 64]</code></td></tr>
+          <tr><td>6 · Mean pool</td><td><code>[32, 23, 64]</code></td><td><code>[32, 64]</code></td></tr>
+          <tr><td>7 · Projection</td><td><code>[32, 64]</code></td><td><code>[32, 128]</code></td></tr>
+          <tr><td>8 · Classifier</td><td><code>[32, 128]</code></td><td><code>[32, 3]</code> logits</td></tr>
+          <tr><td>9 · Serving</td><td><code>[32, 3]</code></td><td>class + confidence + risk</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout info" style="margin-top:18px;">
+        <span class="tag">Why the sequence is 23 tokens</span>
+        A common assumption is one token per input (30) or one per non-target column (28). The code actually
+        produces <strong>1 numerical token + 22 categorical tokens = 23</strong>, because
+        <code>numerical_proj</code> projects all seven continuous values together. The learned positional
+        table is therefore shaped <code>(1, 23, 64)</code>.
+      </div>
+    </div>
+
+    <script>
+    (function () {
+      "use strict";
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      function $(id) { return document.getElementById(id); }
+      function el(tag, cls, text) {
+        var n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (text !== undefined && text !== null) n.textContent = text;
+        return n;
+      }
+      function pseudo(seed) {
+        var x = Math.sin(seed * 12.9898 + seed * 0.7) * 43758.5453;
+        return (x - Math.floor(x)) * 2 - 1;
+      }
+      function fmt(seed) { return pseudo(seed).toFixed(2); }
+
+      /* ---------- Stage 1: embedding lookup ---------- */
+      var fields = [
+        { name: "Gender", raw: "Female", code: 0, card: 2, labels: ["0 Female", "1 Male"] },
+        { name: "Mallampati", raw: "IV", code: 3, card: 4, labels: ["0 · I", "1 · II", "2 · III", "3 · IV"] },
+        { name: "TMD category", raw: "III", code: 2, card: 3, labels: ["0 · I", "1 · II", "2 · III"] }
+      ];
+      var current = 0;
+      var userTouched = false;
+      var cycle = null;
+
+      function renderEmbedding(i) {
+        var f = fields[i];
+        var table = $("tx-emb-table");
+        table.innerHTML = "";
+        table.appendChild(el("div", "tx-emb-head", "idx"));
+        for (var c = 0; c < 6; c++) table.appendChild(el("div", "tx-emb-head", "d" + (c + 1)));
+        for (var r = 0; r < f.card; r++) {
+          var row = el("div", "tx-emb-row" + (r === f.code ? " is-picked" : ""));
+          row.appendChild(el("div", "tx-emb-label", f.labels[r]));
+          for (var c2 = 0; c2 < 6; c2++) row.appendChild(el("div", "tx-emb-cell", fmt(r * 100 + c2 + i * 13)));
+          table.appendChild(row);
+        }
+        table.setAttribute("aria-label", f.name + " embedding table; selected row " + f.code + " produces the token");
+        var vec = $("tx-vec");
+        vec.innerHTML = "";
+        for (var v = 0; v < 6; v++) vec.appendChild(el("div", "tx-vec-cell", fmt(f.code * 37 + v + i * 11)));
+        vec.appendChild(el("div", "tx-vec-cell more", "…"));
+        vec.appendChild(el("div", "tx-vec-cell more", "64"));
+        $("tx-lookup-raw").textContent = f.raw;
+        $("tx-lookup-code").textContent = f.code;
+        var tabs = $("tx-embed-tabs").querySelectorAll(".tx-tab");
+        for (var t = 0; t < tabs.length; t++) tabs[t].setAttribute("aria-selected", t === i ? "true" : "false");
+      }
+
+      function selectField(i) { current = i; renderEmbedding(i); }
+
+      fields.forEach(function (f, i) {
+        var b = el("button", "tx-tab", f.name);
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.setAttribute("aria-selected", i === 0 ? "true" : "false");
+        b.addEventListener("click", function () {
+          userTouched = true;
+          if (cycle) { clearInterval(cycle); cycle = null; }
+          selectField(i);
+        });
+        $("tx-embed-tabs").appendChild(b);
+      });
+
+      var nums = [["Age", "0.42"], ["BMI", "-0.18"], ["Neck", "0.77"], ["Mouth", "-0.31"], ["TMD", "0.09"], ["SMD", "-0.55"], ["Neck mv", "0.63"]];
+      nums.forEach(function (n) {
+        var c = el("div", "tx-chip");
+        c.appendChild(el("b", null, n[0]));
+        c.appendChild(document.createTextNode(n[1]));
+        $("tx-num-chips").appendChild(c);
+      });
+
+      var strip = $("tx-token-strip");
+      strip.appendChild(el("div", "tx-token n", "N"));
+      for (var i = 1; i <= 22; i++) strip.appendChild(el("div", "tx-token c", "C" + i));
+
+      function startCycle() {
+        if (reduce || cycle || userTouched) return;
+        cycle = setInterval(function () { selectField((current + 1) % fields.length); }, 2600);
+      }
+      function stopCycle() { if (cycle) { clearInterval(cycle); cycle = null; } }
+      renderEmbedding(0);
+
+      /* ---------- Stage 2: token matrix + positional encoding ---------- */
+      function bigMatrix(id, kind) {
+        var m = $(id);
+        m.innerHTML = "";
+        m.appendChild(el("div", "tx-mx-h", ""));
+        for (var c = 0; c < 10; c++) m.appendChild(el("div", "tx-mx-h", "d" + (c + 1)));
+        m.appendChild(el("div", "tx-mx-h", "…"));
+        for (var r = 0; r < 23; r++) {
+          var label = r === 0 ? "N" : "C" + r;
+          var rl = el("div", "tx-mx-r", label);
+          rl.style.setProperty("--i", r);
+          if (r === 0) rl.classList.add("tx-row-num");
+          m.appendChild(rl);
+          for (var c2 = 0; c2 < 10; c2++) {
+            var value;
+            if (kind === "x") value = fmt(r * 100 + c2);
+            else if (kind === "p") value = fmt(r * 100 + c2 + 700);
+            else value = (parseFloat(fmt(r * 100 + c2)) + parseFloat(fmt(r * 100 + c2 + 700))).toFixed(2);
+            var cell = el("div", "tx-mx-c", value);
+            cell.style.setProperty("--i", r);
+            if (r === 0) cell.classList.add("tx-row-num");
+            m.appendChild(cell);
+          }
+          var more = el("div", "tx-mx-c", "…");
+          more.style.setProperty("--i", r);
+          if (r === 0) more.classList.add("tx-row-num");
+          m.appendChild(more);
+        }
+      }
+      bigMatrix("tx-mx-x", "x");
+      bigMatrix("tx-mx-p", "p");
+      bigMatrix("tx-mx-out", "out");
+
+      /* ---------- Stage 4: attention math ---------- */
+      var Q = [[1, 0, 1, 0], [0, 1, 1, 0], [1, 1, 0, 1]];
+      var KT = [[1, 0, 1], [0, 1, 1], [1, 1, 0], [0, 0, 1]];
+      var SCORES = [[2, 1, 1], [1, 2, 1], [1, 1, 3]];
+      var WEIGHTS = [[0.452, 0.274, 0.274], [0.274, 0.452, 0.274], [0.212, 0.212, 0.576]];
+      var OUT = [[0.726, 0.548, 0.726, 0.274], [0.548, 0.726, 0.726, 0.274], [0.788, 0.788, 0.424, 0.576]];
+
+      function renderAttn(id, data, rowLabels, colLabels, cls) {
+        var m = $(id);
+        m.innerHTML = "";
+        m.className = "tx-matrix tx-matrix-attn " + cls;
+        m.appendChild(el("div", "tx-mx-h", ""));
+        colLabels.forEach(function (c) { m.appendChild(el("div", "tx-mx-h", c)); });
+        data.forEach(function (row, r) {
+          m.appendChild(el("div", "tx-mx-r", rowLabels[r]));
+          row.forEach(function (v, c) {
+            var cell = el("div", "tx-mx-c", Number.isInteger(v) ? String(v) : v.toFixed(3));
+            cell.dataset.r = r;
+            cell.dataset.c = c;
+            m.appendChild(cell);
+          });
+        });
+      }
+
+      renderAttn("tx-q", Q, ["q1", "q2", "q3"], ["d1", "d2", "d3", "d4"], "cols-4");
+      renderAttn("tx-kt", KT, ["d1", "d2", "d3", "d4"], ["k1", "k2", "k3"], "cols-3");
+      renderAttn("tx-scores", SCORES, ["q1", "q2", "q3"], ["k1", "k2", "k3"], "cols-3");
+      renderAttn("tx-weights", WEIGHTS, ["q1", "q2", "q3"], ["k1", "k2", "k3"], "cols-3");
+      renderAttn("tx-attn-out", OUT, ["q1", "q2", "q3"], ["d1", "d2", "d3", "d4"], "cols-4");
+
+      function clearMarks() {
+        var cells = document.querySelectorAll(".tx-matrix-attn .tx-mx-c");
+        for (var i = 0; i < cells.length; i++) cells[i].classList.remove("is-row", "is-col", "is-hit");
+        var panels = document.querySelectorAll(".tx-mini");
+        for (var j = 0; j < panels.length; j++) panels[j].classList.remove("is-active");
+      }
+      function markRow(id, row) {
+        var cells = $(id).querySelectorAll(".tx-mx-c");
+        for (var i = 0; i < cells.length; i++) if (Number(cells[i].dataset.r) === row) cells[i].classList.add("is-row");
+      }
+      function markCol(id, col) {
+        var cells = $(id).querySelectorAll(".tx-mx-c");
+        for (var i = 0; i < cells.length; i++) if (Number(cells[i].dataset.c) === col) cells[i].classList.add("is-col");
+      }
+      function markHit(id, row, col) {
+        var cells = $(id).querySelectorAll(".tx-mx-c");
+        for (var i = 0; i < cells.length; i++) {
+          if (Number(cells[i].dataset.r) === row && Number(cells[i].dataset.c) === col) cells[i].classList.add("is-hit");
+        }
+      }
+
+      var step = 0;
+      var statuses = [
+        "Press Play or Next to walk through the math.",
+        "Step 1 · Pick query token q1.",
+        "Step 2 · Compare it with key k1.",
+        "Step 3 · Dot product produces one score.",
+        "Step 4 · Repeat for all 9 pairs, then scale by 1/√4.",
+        "Step 5 · Softmax turns the row into weights.",
+        "Step 6 · Weighted sum of V gives the output."
+      ];
+      var maths = [
+        "Q · Kᵀ → scores → softmax → ×V",
+        "q1 = [1, 0, 1, 0]",
+        "k1 = [1, 0, 1, 0]",
+        "score11 = q1 · k1 = 1·1 + 0·0 + 1·1 + 0·0 = 2",
+        "QKᵀ = [[2,1,1],[1,2,1],[1,1,3]]  ÷ 2 →  [[1,0.5,0.5],[0.5,1,0.5],[0.5,0.5,1.5]]",
+        "softmax([1, 0.5, 0.5]) = [0.452, 0.274, 0.274]",
+        "out1 = 0.452·[1,0,1,0] + 0.274·[0,1,1,0] + 0.274·[1,1,0,1] = [0.726, 0.548, 0.726, 0.274]"
+      ];
+
+      function setStep(n) {
+        step = Math.max(0, Math.min(6, n));
+        clearMarks();
+        if (step >= 1) { markRow("tx-q", 0); $("tx-panel-q").classList.add("is-active"); }
+        if (step >= 2) { markCol("tx-kt", 0); $("tx-panel-kt").classList.add("is-active"); }
+        if (step >= 3) { markHit("tx-scores", 0, 0); $("tx-panel-scores").classList.add("is-active"); }
+        if (step >= 4) { $("tx-panel-scores").classList.add("is-active"); }
+        if (step >= 5) { markRow("tx-weights", 0); $("tx-panel-weights").classList.add("is-active"); }
+        if (step >= 6) { markRow("tx-attn-out", 0); $("tx-panel-output").classList.add("is-active"); }
+        $("tx-attn-status").textContent = statuses[step];
+        $("tx-math-callout").textContent = maths[step];
+      }
+
+      var timer = null;
+      function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+      function nextStep() { stopTimer(); setStep(step + 1); }
+      function play() {
+        stopTimer();
+        if (step >= 6) setStep(0);
+        timer = setInterval(function () {
+          if (step >= 6) { stopTimer(); return; }
+          setStep(step + 1);
+        }, 2200);
+      }
+      $("tx-play").addEventListener("click", play);
+      $("tx-next").addEventListener("click", nextStep);
+      $("tx-reset").addEventListener("click", function () { stopTimer(); setStep(0); });
+      setStep(0);
+
+      /* ---------- Stage 5: pooling ---------- */
+      var pool = $("tx-pool-tokens");
+      for (var p = 0; p < 23; p++) {
+        var token = el("div", "tx-pool-token");
+        token.style.setProperty("--i", p);
+        pool.appendChild(token);
+      }
+
+      /* ---------- Scroll-triggered reveals and auto-play ---------- */
+      var autoPlayed = false;
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            if (entry.target.id === "tx-embed") startCycle();
+            if (entry.target.id === "tx-attention" && !autoPlayed && !reduce) {
+              autoPlayed = true;
+              setTimeout(function () { if (!timer) play(); }, 1000);
+            }
+          } else {
+            if (entry.target.id === "tx-embed") stopCycle();
+            if (entry.target.id === "tx-attention") stopTimer();
+          }
+        });
+      }, { threshold: 0.15 });
+      var stages = document.querySelectorAll(".tx-stage");
+      for (var s = 0; s < stages.length; s++) io.observe(stages[s]);
+    })();
+    </script>
+
+    <div class="grid g2" style="margin-top:20px;">
+      <div class="card">
+        <h3><span class="num">1</span> Read the patient row</h3>
+        <p>
+          The form supplies <strong>7 numerical measurements</strong> and <strong>22 categorical answers</strong>.
+          In training, <code>StandardScaler</code> centers and scales the numericals, and
+          <code>LabelEncoder</code> turns each category into an integer <code>0…card−1</code>.
+        </p>
+        <p class="muted mono" style="font-size:.78rem;margin:0;">numerical [B, 7] · 22 categorical vectors [B] each</p>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">2</span> Turn values into tokens</h3>
+        <p>
+          <code>numerical_proj = nn.Linear(7, 64)</code> maps all seven numbers to <strong>one</strong> 64-d
+          token. In parallel, 22 independent <code>nn.Embedding(cardinality, 64)</code> tables map each
+          category to its own 64-d token. The <code>.clamp(0, num_embeddings−1)</code> guard keeps an
+          out-of-range index from crashing inference.
+        </p>
+        <p class="muted mono" style="font-size:.78rem;margin:0;">[B, 7] → [B, 1, 64] · 22 × ([B] → [B, 1, 64])</p>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">3</span> Concatenate into a sequence</h3>
+        <p>
+          <code>torch.cat([x_num] + x_cat, dim=1)</code> stacks the numerical token and the 22 categorical
+          tokens into a <code>[B, 23, 64]</code> matrix. Token 0 is the numerical profile; tokens 1–22 are
+          the categorical columns. This is the sequence the transformer actually reads.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">4</span> Add positional encoding</h3>
+        <p>
+          A learned parameter <code>pos_encoding</code> of shape <code>(1, 23, 64)</code> is added to the
+          matrix. Attention is permutation-invariant on its own, so this is what tells the block which
+          position each token occupies. The shape does not change.
+        </p>
+        <p class="muted mono" style="font-size:.78rem;margin:0;">x = x + pos_encoding[:, :23]</p>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">5</span> Run the transformer block — three times</h3>
+        <p>The block keeps the shape <code>[B, 23, 64]</code> and performs four operations:</p>
+        <ul style="padding-left:18px;margin:0;">
+          <li><strong>5a · Self-attention.</strong> Q/K/V, 4 heads × 16 dims, <code style="white-space:nowrap;">softmax(Q·K<sup>T</sup>/√16)·V</code>.</li>
+          <li><strong>5b · Add + LayerNorm 1.</strong> <code>x = LayerNorm(x + Attention(x))</code>.</li>
+          <li><strong>5c · Feed-forward.</strong> <code>64→256→64</code> with GELU and dropout 0.3.</li>
+          <li><strong>5d · Add + LayerNorm 2.</strong> <code>x = LayerNorm(x + FFN(x))</code>.</li>
+        </ul>
+        <p class="muted" style="margin:10px 0 0;">Stacked 3×; each block has its own weights.</p>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">6</span> Mean-pool the tokens</h3>
+        <p>
+          <code>x.mean(dim=1)</code> averages across the 23-token axis, turning <code>[B, 23, 64]</code> into
+          <code>[B, 64]</code>. The result is one fixed-size summary vector per patient, independent of
+          token order.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">7</span> Project to 128 dimensions</h3>
+        <p>
+          <code>output_proj = nn.Linear(64, 128)</code> expands the pooled summary into the patient
+          embedding used by the classifier: <code>[B, 64] → [B, 128]</code>.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">8</span> Classify</h3>
+        <p>
+          The head is <code>Linear(128→128) → GELU → Dropout(0.3) → Linear(128→3)</code>. It outputs three
+          raw logits, one for each class: <strong>Easy</strong>, <strong>Moderate</strong>,
+          <strong>Difficult</strong>.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">9</span> Softmax, class and risk</h3>
+        <p>
+          The API divides the logits by a <strong>temperature of 5.0</strong> and applies softmax, yielding
+          three probabilities. <code>argmax</code> gives the predicted class and its confidence. The router
+          then blends the probabilities into the risk score:
+        </p>
+        <div class="formula" style="font-size:.76rem;white-space:nowrap;">risk = (0·P(Easy) + 50·P(Moderate) + 100·P(Difficult)) ÷ 100</div>
+      </div>
+    </div>
+
+    <h4 style="margin-top:28px;">📐 Shape tracker (batch of 32 patients)</h4>
+    <table>
+      <thead><tr><th>Stage</th><th>What enters</th><th>What leaves</th></tr></thead>
+      <tbody>
+        <tr><td>1 · Inputs</td><td>30 form fields</td><td>1 × <code>[32, 7]</code> + 22 × <code>[32]</code></td></tr>
+        <tr><td>2 · Tokens</td><td><code>[32, 7]</code> + 22 indices</td><td><code>[32, 1, 64]</code> + 22 × <code>[32, 1, 64]</code></td></tr>
+        <tr><td>3 · Concatenate</td><td>1 numerical + 22 categorical tokens</td><td><code>[32, 23, 64]</code></td></tr>
+        <tr><td>4 · Positional</td><td><code>[32, 23, 64]</code></td><td><code>[32, 23, 64]</code></td></tr>
+        <tr><td>5 · Block ×3</td><td><code>[32, 23, 64]</code></td><td><code>[32, 23, 64]</code></td></tr>
+        <tr><td>6 · Mean pool</td><td><code>[32, 23, 64]</code></td><td><code>[32, 64]</code></td></tr>
+        <tr><td>7 · Projection</td><td><code>[32, 64]</code></td><td><code>[32, 128]</code></td></tr>
+        <tr><td>8 · Classifier</td><td><code>[32, 128]</code></td><td><code>[32, 3]</code> logits</td></tr>
+        <tr><td>9 · Serving</td><td><code>[32, 3]</code></td><td>class + confidence + risk</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout info" style="margin-top:18px;">
+      <span class="tag">Why the sequence is 23 tokens</span>
+      A common assumption is one token per input (30) or one per non-target column (28). The code actually
+      produces <strong>1 numerical token + 22 categorical tokens = 23</strong>, because
+      <code>numerical_proj</code> projects all seven continuous values together. The learned positional
+      table is therefore shaped <code>(1, 23, 64)</code>.
+    </div>
+
+    <div class="grid g2" style="margin-top:20px;">
+      <div class="card">
+        <h4>⚙ Exact architecture settings</h4>
+        <table>
+          <tbody>
+            <tr><th>Setting</th><th>Value</th></tr>
+            <tr><td>Embedding size (embed_dim)</td><td>64</td></tr>
+            <tr><td>Transformer blocks</td><td>3</td></tr>
+            <tr><td>Attention heads</td><td>4</td></tr>
+            <tr><td>Feed-forward size</td><td>256</td></tr>
+            <tr><td>Tabular output dim</td><td>128</td></tr>
+            <tr><td>Dropout</td><td>0.3</td></tr>
+            <tr><td>Output classes</td><td>3</td></tr>
+            <tr><td>Optimizer</td><td>AdamW (lr 1e-3, wd 1e-4)</td></tr>
+            <tr><td>Loss</td><td>CrossEntropy (class-weighted)</td></tr>
+            <tr><td>Batch size / Epochs</td><td>32 / 100 (early stop @ 15)</td></tr>
+            <tr><td>Device</td><td>CPU (GTX 1650 Ti has only 4 GB VRAM)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card tint-grey">
+        <h4>🧩 Why a transformer for a spreadsheet?</h4>
+        <p>
+          Traditional models treat each column independently. A transformer lets the model compute
+          relationships like <em>"when Mallampati is IV <strong>and</strong> neck movement is low, the
+          combined risk is higher than either alone"</em>. Self-attention is exactly the mechanism that
+          captures these interactions — it is the same idea behind modern language models, but applied
+          to clinical columns instead of words.
+        </p>
+        <p class="muted">
+          The project plan also designed a full <strong>multimodal</strong> version (tabular + 5 image
+          types fused with cross-attention). That code exists
+          (<code>image_encoder.py</code>, <code>fusion.py</code>) but is <strong>not used</strong> in
+          production because no real image data is available yet — so the shipped model is
+          <em>tabular-only</em>.
+        </p>
+      </div>
+    </div>
+
+    <h4 style="margin-top:26px;">📈 Model comparison</h4>
+    <table>
+      <thead><tr><th>Model</th><th>Type</th><th>Accuracy</th><th>AUC-ROC</th><th>Artifact</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><strong>TabTransformer</strong></td><td>Deep learning (Transformer)</td><td>0.859</td><td>0.970</td><td><code>tabular_best.pt</code></td><td>Serves live predictions</td></tr>
+        <tr><td>XGBoost</td><td>Gradient-boosted trees</td><td>0.845</td><td>0.962</td><td><code>xgboost_best.json</code></td><td>Baseline</td></tr>
+        <tr><td>Random Forest</td><td>Tree ensemble</td><td>0.813</td><td>0.953</td><td><code>randomforest_best.pkl</code></td><td>Baseline</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">AUC-ROC measures how well the model separates the classes (1.0 = perfect). All three
+      are strong; the transformer edges ahead because it models feature interactions better.</p>
+  </section>
+
+  <!-- ============================ 07 RISK SCORE ============================ -->
+  <section id="risk">
+    <span class="eyebrow">07 · Risk Score</span>
+    <h2>How the risk percentage is calculated</h2>
+    <p class="lead">
+      The model does not output a single number — it outputs a <strong>probability for each of the
+      three classes</strong> (they add up to 100%). Those three numbers are then turned into one clean
+      <strong>risk score</strong> between 0 and 1 (shown to the doctor as 0–100%).
+    </p>
+
+    <div class="card">
+      <h4>Step 1 · The model gives three probabilities</h4>
+      <p>After the classifier head, a <strong>softmax</strong> function converts the raw scores into
+        probabilities. Example output for one patient:</p>
+      <div class="meter">
+        <div class="m-easy" style="width:10%;">Easy 10%</div>
+        <div class="m-mod" style="width:25%;">Moderate 25%</div>
+        <div class="m-diff" style="width:65%;">Difficult 65%</div>
+      </div>
+      <p class="muted" style="margin-top:10px;">The class with the highest probability becomes the
+        <strong>prediction</strong> (here: <strong>Difficult</strong>), and that probability becomes the
+        <strong>confidence</strong> (65%).</p>
+    </div>
+
+    <div class="card tint-yellow">
+      <h4>Step 2 · The weighted risk formula</h4>
+      <p>Each class is given a fixed weight — Easy = 0, Moderate = 50, Difficult = 100 — and the
+        probabilities are used to blend them into one number:</p>
+      <div class="formula">
+        weighted = (0 × P(Easy)) + (50 × P(Moderate)) + (100 × P(Difficult))
+        <br><br>
+        risk_score = weighted ÷ 100&nbsp;&nbsp;&nbsp;<span class="cm">// result sits in the range 0.0 – 1.0</span>
+      </div>
+      <p style="margin-top:16px;"><strong>Worked example</strong> (the patient above):</p>
+      <div class="formula">
+        weighted = (0 × 0.10) + (50 × 0.25) + (100 × 0.65)
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= 0 + 12.5 + 65 = <b>77.5</b>
+        <br><br>
+        risk_score = 77.5 ÷ 100 = <b>0.775</b> → shown in the UI as <b>78 / 100 (78% risk)</b>
+      </div>
+    </div>
+
+    <div class="grid g3">
+      <div class="stat" style="background:#DEF7D6;"><span class="big" style="color:#1c6a2a;">0–33</span><span class="lbl">Low · Easy</span></div>
+      <div class="stat" style="background:#FFE8C7;"><span class="big" style="color:#8a4b00;">34–66</span><span class="lbl">Moderate</span></div>
+      <div class="stat" style="background:#FFDCDC;"><span class="big" style="color:#8a1010;">67–100</span><span class="lbl">High · Difficult</span></div>
+    </div>
+
+    <div class="callout warn">
+      <span class="tag">Temperature softening (a safety tweak)</span>
+      Before the softmax, the backend divides the raw scores by a <strong>temperature of 5.0</strong>.
+      This "flattens" the probabilities so the model is not over-confident — important because the
+      data is synthetic and an over-confident wrong answer is dangerous in a clinical tool.
+    </div>
+
+    <div class="callout info">
+      <span class="tag">Where the score is stored</span>
+      The final <code>risk_score</code> (plus the class, confidence and all three probabilities) is
+      saved in the <code>predictions</code> collection in MongoDB, so every past assessment keeps its
+      exact result.
+    </div>
+  </section>
+
+  <!-- ============================ 08 AI ============================ -->
+  <section id="ai">
+    <span class="eyebrow">08 · The AI Assistant</span>
+    <h2>How the LLM writes the clinical report</h2>
+    <p class="lead">
+      The ML model gives numbers. The <strong>LLM (Large Language Model)</strong> turns those numbers
+      plus the patient's profile into a short, human-readable clinical summary and a set of
+      recommendations for the anesthesiologist.
+    </p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 620 790" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LLM flow (top-down)">
+        <defs>
+          <marker id="ah4" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 z" fill="#111111"/>
+          </marker>
+          <style>
+            .qb{stroke:#111;stroke-width:3;rx:8;}
+            .qt{font-family:monospace;font-weight:800;font-size:13.5px;fill:#111;}
+            .qs{font-family:monospace;font-size:10.5px;fill:#5b5642;}
+            .ql{font-family:monospace;font-size:9.5px;font-weight:700;fill:#111;}
+            .qf{stroke:#111;stroke-width:3;fill:none;marker-end:url(#ah4);}
+          </style>
+        </defs>
+
+        <rect class="qb" x="110" y="20" width="400" height="90" fill="#B8F15A"/>
+        <text class="qt" x="132" y="50">1 · PREDICTION OUTPUT</text>
+        <text class="qs" x="132" y="74">class + confidence · three probabilities</text>
+        <text class="qs" x="132" y="92">and the full patient profile</text>
+
+        <line class="qf" x1="310" y1="110" x2="310" y2="150"/>
+        <text class="ql" x="322" y="134">build prompt</text>
+
+        <rect class="qb" x="110" y="150" width="400" height="130" fill="#FFE066"/>
+        <text class="qt" x="132" y="180">2 · PROMPT BUILDER</text>
+        <text class="qs" x="132" y="204">system prompt (clinical rules + safety)</text>
+        <text class="qs" x="132" y="222">+ patient profile text</text>
+        <text class="qs" x="132" y="240">+ model probabilities</text>
+        <text class="qs" x="132" y="258">+ strict output rules: bullet points only</text>
+
+        <line class="qf" x1="310" y1="280" x2="310" y2="320"/>
+        <text class="ql" x="322" y="304">send request</text>
+
+        <rect class="qb" x="110" y="320" width="400" height="130" fill="#FF6BD6"/>
+        <text class="qt" x="132" y="350">3 · LLM SERVICE</text>
+        <text class="qs" x="132" y="374">OpenAI-compatible client</text>
+        <text class="qs" x="132" y="392">OpenRouter / Groq / Ollama</text>
+        <text class="qs" x="132" y="410">Qwen 2.5 72B · temp 0.3 · max 512 tokens</text>
+        <text class="qs" x="132" y="428">1 retry on failure</text>
+
+        <line class="qf" x1="310" y1="450" x2="310" y2="490"/>
+        <text class="ql" x="322" y="474">on success</text>
+
+        <rect class="qb" x="110" y="490" width="400" height="130" fill="#57E6E6"/>
+        <text class="qt" x="132" y="520">4 · TWO TEXT OUTPUTS</text>
+        <text class="qs" x="132" y="544">• Clinical summary — 5 bullet points</text>
+        <text class="qs" x="132" y="562">• Recommendations — 5 to 10 bullet points</text>
+        <text class="qs" x="132" y="582">saved to the llm_reports collection</text>
+
+        <path class="qf" d="M110,385 H50 V715 H110" stroke-dasharray="8 6"/>
+        <text class="ql" x="52" y="470">on failure</text>
+
+        <rect class="qb" x="110" y="670" width="400" height="90" fill="#FFDCDC"/>
+        <text class="qt" x="132" y="700">⚠ FALLBACK — LLM offline or error</text>
+        <text class="qs" x="132" y="724">safe canned bullet text is returned instead</text>
+        <text class="qs" x="132" y="742">(the API still responds normally)</text>
+      </svg>
+    </div>
+
+    <div class="grid g2" style="margin-top:20px;">
+      <div class="card">
+        <h4>🧾 What goes into the prompt</h4>
+        <p>The backend assembles a strict, structured prompt (see
+          <code>backend/deploy/llm_assistant.py</code>):</p>
+        <pre><span class="cm"># SYSTEM PROMPT (rules for the model)</span>
+Anesthesiologist decision-support for a
+difficult-airway prediction (Easy/Moderate/
+Difficult). Use ONLY provided patient data,
+never invent values. If confidence &lt; 60%,
+note uncertainty. Frame as risk and
+preparation, never guaranteed outcomes.
+
+<span class="cm"># USER PROMPT (assembled per patient)</span>
+Patient Profile:
+  Age: 54, Gender: Female, BMI: 32.9 ...
+  Mallampati Score: 4, TMD: 6.1 cm ...
+
+Model probabilities: Easy: 10%, Moderate: 25%, Difficult: 65%
+
+Return ONLY 5 concise bullet points.
+- Each line must start with "- ".
+- Keep every bullet under 18 words.</pre>
+      </div>
+      <div class="card tint-pink">
+        <h4>🛡 Safety design choices</h4>
+        <ul style="padding-left:18px;">
+          <li><strong>"Use only provided data"</strong> — the LLM may not invent lab values.</li>
+          <li><strong>Bullet-only output</strong> — consistent, scannable clinical text.</li>
+          <li><strong>Uncertainty rule</strong> — below 60% confidence it must say so.</li>
+          <li><strong>Non-blocking</strong> — if the LLM is down, the API still returns a valid
+            (fallback) report and the dashboard shows an "AI unavailable" banner.</li>
+          <li><strong>Feasibility check</strong> — responses shorter than 15 characters are rejected and
+            retried.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid g3" style="margin-top:18px;">
+      <div class="stat"><span class="big" style="font-size:1.3rem;">OpenRouter</span><span class="lbl">Provider (default)</span></div>
+      <div class="stat"><span class="big" style="font-size:1.3rem;">Qwen 2.5 72B</span><span class="lbl">Model</span></div>
+      <div class="stat"><span class="big" style="font-size:1.3rem;">0.3</span><span class="lbl">Temperature</span></div>
+    </div>
+    <p class="muted" style="margin-top:12px;">
+      The project also supports a local Ollama setup (<code>qvac/medpsy</code>) and the Docker Compose
+      file ships with a Groq endpoint (<code>llama3-70b-8192</code>). The code uses an
+      OpenAI-compatible client, so switching providers is a one-line change of the
+      <code>LLM_API_URL</code> / <code>LLM_MODEL</code> environment variables.
+    </p>
+  </section>
+
+  <!-- ============================ 09 BACKEND ============================ -->
+  <section id="backend">
+    <span class="eyebrow">09 · Backend &amp; APIs</span>
+    <h2>The FastAPI control room</h2>
+    <p class="lead">
+      The backend is written in <strong>Python (FastAPI)</strong>. It handles login, stores patients,
+      runs predictions, calls the LLM and talks to MongoDB asynchronously. It is the only component
+      the browser is allowed to contact.
+    </p>
+
+    <div class="grid g3">
+      <div class="stat c-black"><span class="big" style="font-size:1.4rem;">JWT</span><span class="lbl">Auth (HS256, 480 min)</span></div>
+      <div class="stat"><span class="big" style="font-size:1.4rem;">bcrypt</span><span class="lbl">Password hashing</span></div>
+      <div class="stat"><span class="big" style="font-size:1.4rem;">Motor</span><span class="lbl">Async MongoDB driver</span></div>
+    </div>
+
+    <h3 style="margin-top:30px;">🔐 Authentication &amp; roles</h3>
+    <div class="grid g2">
+      <div class="card">
+        <p>Login returns a <strong>JWT token</strong>, which the browser stores and sends with every
+          request. The backend reads the user's role <em>fresh from the database</em> on each request,
+          so a downgraded or deleted user loses access immediately.</p>
+        <div class="flow rows">
+          <div class="node p"><div class="t">admin</div><div class="s">level 3 · full access</div></div>
+          <div class="node o"><div class="t">doctor</div><div class="s">level 2 · create patients + predict</div></div>
+          <div class="node c"><div class="t">viewer</div><div class="s">level 1 · read only</div></div>
+        </div>
+        <p class="muted">Registration always creates a <strong>doctor</strong> — never an admin.</p>
+      </div>
+      <div class="card tint-grey">
+        <h4>Rate limiting (abuse protection)</h4>
+        <p>To slow down attackers, the backend throttles requests in a 15-minute window:</p>
+        <table>
+          <tbody>
+            <tr><td>Failed logins per email</td><td>5</td></tr>
+            <tr><td>Logins per IP</td><td>30</td></tr>
+            <tr><td>Sign-ups per IP</td><td>10</td></tr>
+          </tbody>
+        </table>
+        <p class="muted">It also sets security headers (X-Frame-Options, nosniff, HSTS, etc.) on every
+          response.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:30px;">🔌 Complete API reference</h3>
+    <table>
+      <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th><th>Who can call it</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill c">GET</span></td><td><code>/health</code></td><td>Health check (used by Docker &amp; cloud)</td><td>Anyone</td></tr>
+        <tr><td><span class="pill o">POST</span></td><td><code>/api/auth/register</code></td><td>Create a new user account</td><td>Anyone</td></tr>
+        <tr><td><span class="pill o">POST</span></td><td><code>/api/auth/login</code></td><td>Log in, receive JWT token</td><td>Anyone</td></tr>
+        <tr><td><span class="pill c">GET</span></td><td><code>/api/auth/me</code></td><td>Get the current logged-in user</td><td>Logged in</td></tr>
+        <tr><td><span class="pill c">GET</span></td><td><code>/api/llm/status</code></td><td>Is the AI assistant reachable? (latency, model)</td><td>Logged in</td></tr>
+        <tr><td><span class="pill o">POST</span></td><td><code>/api/patients</code></td><td>Create a patient record</td><td>doctor+</td></tr>
+        <tr><td><span class="pill c">GET</span></td><td><code>/api/patients</code></td><td>List patients (paginated)</td><td>Logged in</td></tr>
+        <tr><td><span class="pill c">GET</span></td><td><code>/api/patients/{id}</code></td><td>Get one patient</td><td>Logged in</td></tr>
+        <tr><td><span class="pill p">PUT</span></td><td><code>/api/patients/{id}</code></td><td>Update a patient</td><td>doctor+</td></tr>
+        <tr><td><span class="pill r">DEL</span></td><td><code>/api/patients/{id}</code></td><td>Delete patient (+ their predictions)</td><td>admin</td></tr>
+        <tr><td><span class="pill o">POST</span></td><td><code>/api/predictions</code></td><td><strong>Run the ML prediction + LLM report</strong></td><td>doctor+</td></tr>
+        <tr><td><span class="pill c">GET</span></td><td><code>/api/predictions</code></td><td>List past predictions</td><td>Logged in</td></tr>
+        <tr><td><span class="pill c">GET</span></td><td><code>/api/predictions/{id}/report</code></td><td>Fetch the saved LLM report</td><td>Logged in</td></tr>
+        <tr><td><span class="pill r">DEL</span></td><td><code>/api/predictions/{id}</code></td><td>Delete a prediction + its report</td><td>admin</td></tr>
+        <tr><td><span class="pill c">GET</span></td><td><code>/api/predictions/export/csv</code></td><td>Download all predictions as CSV</td><td>doctor+</td></tr>
+      </tbody>
+    </table>
+
+    <h4 style="margin-top:26px;">🗄 Database collections</h4>
+    <div class="grid g4">
+      <div class="stat"><span class="big" style="font-size:1.2rem;">users</span><span class="lbl">email, hashed pw, role</span></div>
+      <div class="stat"><span class="big" style="font-size:1.2rem;">patients</span><span class="lbl">basic demographics</span></div>
+      <div class="stat"><span class="big" style="font-size:1.2rem;">predictions</span><span class="lbl">class, confidence, risk</span></div>
+      <div class="stat"><span class="big" style="font-size:1.2rem;">llm_reports</span><span class="lbl">summary + recommendations</span></div>
+    </div>
+
+    <div class="callout info">
+      <span class="tag">Startup sequence (lifespan)</span>
+      When the API boots it: (1) connects to MongoDB → (2) creates the database indexes →
+      (3) loads the TabTransformer model into memory once → then starts serving requests. Loading the
+      model once at boot (instead of per request) is what keeps predictions fast.
+    </div>
+  </section>
+
+  <!-- ============================ 10 FRONTEND ============================ -->
+  <section id="frontend">
+    <span class="eyebrow">10 · Frontend</span>
+    <h2>The doctor's dashboard (Next.js)</h2>
+    <p class="lead">
+      The frontend is a <strong>Next.js 14</strong> web app (React + Tailwind CSS). It is deliberately
+      simple: a login screen, a dashboard where you run an assessment, and a few pages for records,
+      reports, settings and info.
+    </p>
+
+    <h4>🗺 Page map</h4>
+    <div class="grid g3">
+      <div class="card flat"><strong><code>/login</code></strong><p class="muted" style="margin:.3em 0 0;">Email + password sign-in.</p></div>
+      <div class="card flat"><strong><code>/signup</code></strong><p class="muted" style="margin:.3em 0 0;">Register a new doctor account.</p></div>
+      <div class="card flat tint-yellow"><strong><code>/dashboard</code></strong><p class="muted" style="margin:.3em 0 0;">The main screen: patient form, risk gauge, AI report, recent records, stats.</p></div>
+      <div class="card flat"><strong><code>/history</code></strong><p class="muted" style="margin:.3em 0 0;">All past assessments.</p></div>
+      <div class="card flat"><strong><code>/reports</code></strong><p class="muted" style="margin:.3em 0 0;">Expandable clinical reports.</p></div>
+      <div class="card flat"><strong><code>/settings</code></strong><p class="muted" style="margin:.3em 0 0;">Profile, dark mode, system info.</p></div>
+      <div class="card flat"><strong><code>/about</code></strong><p class="muted" style="margin:.3em 0 0;">Model &amp; architecture info.</p></div>
+      <div class="card flat"><strong><code>/</code></strong><p class="muted" style="margin:.3em 0 0;">Redirects to /dashboard or /login.</p></div>
+    </div>
+
+    <h4 style="margin-top:26px;">🧩 Main components on the dashboard</h4>
+    <table>
+      <thead><tr><th>Component</th><th>What it shows</th></tr></thead>
+      <tbody>
+        <tr><td><code>Sidebar</code></td><td>Navigation, user profile, logout, collapsible</td></tr>
+        <tr><td><code>PatientForm</code></td><td>Tabbed data entry (Basic / Airway / Physical / History) with validation + quick-fill test patients</td></tr>
+        <tr><td><code>RiskPredictionCard</code></td><td>Big circular risk gauge (0–100%), confidence bar, stacked probability bar</td></tr>
+        <tr><td><code>AiClinicalAssessment</code></td><td>The LLM summary + recommendations, urgency badge, fallback banner</td></tr>
+        <tr><td><code>MiniHistory</code> / <code>PatientHistory</code></td><td>Recent + full list of past predictions</td></tr>
+        <tr><td><code>StatsCard</code></td><td>Counts of Easy / Moderate / Difficult assessments</td></tr>
+      </tbody>
+    </table>
+
+    <h4 style="margin-top:26px;">🔗 How the frontend talks to the backend</h4>
+    <div class="diagram">
+      <svg viewBox="0 0 980 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Frontend to backend connection">
+        <defs>
+          <marker id="ah5" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 z" fill="#111111"/>
+          </marker>
+          <style>
+            .cb{stroke:#111;stroke-width:3;rx:8;}
+            .ct{font-family:monospace;font-weight:800;font-size:13px;fill:#111;}
+            .cs{font-family:monospace;font-size:10.5px;fill:#5b5642;}
+            .cl{font-family:monospace;font-size:9.5px;font-weight:700;fill:#111;}
+            .cf{stroke:#111;stroke-width:3;fill:none;marker-end:url(#ah5);}
+            .cf2{stroke:#111;stroke-width:3;fill:none;marker-end:url(#ah5);stroke-dasharray:7 5;}
+          </style>
+        </defs>
+
+        <rect class="cb" x="30" y="60" width="250" height="150" fill="#FFE066"/>
+        <text class="ct" x="46" y="92">BROWSER (React)</text>
+        <text class="cs" x="46" y="118">PatientForm → onSubmit</text>
+        <text class="cs" x="46" y="138">JWT kept in localStorage</text>
+        <text class="cs" x="46" y="158">src/lib/api.ts = fetch client</text>
+        <text class="cs" x="46" y="178">BASE_URL = NEXT_PUBLIC_API_URL</text>
+        <text class="cs" x="46" y="198">renders gauge + AI card</text>
+
+        <line class="cf" x1="280" y1="110" x2="365" y2="110"/>
+        <text class="cl" x="287" y="102">POST + JWT</text>
+        <line class="cf2" x1="365" y1="160" x2="280" y2="160"/>
+        <text class="cl" x="295" y="178">JSON</text>
+
+        <rect class="cb" x="365" y="60" width="250" height="150" fill="#57E6E6"/>
+        <text class="ct" x="381" y="92">FASTAPI BACKEND</text>
+        <text class="cs" x="381" y="118">verifies JWT</text>
+        <text class="cs" x="381" y="138">runs model + risk score</text>
+        <text class="cs" x="381" y="158">calls LLM for the report</text>
+        <text class="cs" x="381" y="178">writes to MongoDB</text>
+        <text class="cs" x="381" y="198">returns JSON</text>
+
+        <line class="cf" x1="615" y1="110" x2="700" y2="110"/>
+        <text class="cl" x="626" y="102">request</text>
+        <line class="cf2" x1="700" y1="160" x2="615" y2="160"/>
+        <text class="cl" x="645" y="178">data</text>
+
+        <rect class="cb" x="700" y="60" width="250" height="150" fill="#FFDDF4"/>
+        <text class="ct" x="716" y="92">MONGO + LLM</text>
+        <text class="cs" x="716" y="118">predictions collection</text>
+        <text class="cs" x="716" y="138">llm_reports collection</text>
+        <text class="cs" x="716" y="158">patients · users</text>
+        <text class="cs" x="716" y="178">OpenRouter / Groq</text>
+
+        <rect class="cb" x="30" y="245" width="920" height="55" fill="#E7E3D4"/>
+        <text class="cs" x="48" y="279">Every request sends:  Authorization: Bearer &lt;token&gt;     ·     missing / invalid token → 401 → redirect to /login</text>
+      </svg>
+    </div>
+
+    <div class="callout good">
+      <span class="tag">Why this is a clean design</span>
+      All network code lives in one file (<code>src/lib/api.ts</code>). Every request automatically
+      attaches the JWT, and a bad token bounces the user back to login. The UI never hard-codes a
+      backend IP — it reads <code>NEXT_PUBLIC_API_URL</code>, so the same build works locally and in
+      the cloud.
+    </div>
+  </section>
+
+  <!-- ============================ 11 WORKFLOW ============================ -->
+  <section id="workflow">
+    <span class="eyebrow">11 · End-to-End Workflow</span>
+    <h2>One assessment, step by step</h2>
+    <p class="lead">This is the full journey from a doctor opening the app to a stored result.</p>
+
+    <div class="card">
+      <div class="flow rows">
+        <div class="node k"><div class="t">1 · LOGIN</div><div class="s">POST /api/auth/login → JWT</div></div>
+        <div class="arrow">→</div>
+        <div class="node c"><div class="t">2 · FILL FORM</div><div class="s">30 fields, client-validated</div></div>
+        <div class="arrow">→</div>
+        <div class="node l"><div class="t">3 · SAVE PATIENT</div><div class="s">POST /api/patients</div></div>
+      </div>
+      <div class="flow rows">
+        <div class="node o"><div class="t">4 · PREDICT</div><div class="s">POST /api/predictions</div></div>
+        <div class="arrow">→</div>
+        <div class="node p"><div class="t">5 · ENCODE + SCALE</div><div class="s">categoricals + StandardScaler</div></div>
+        <div class="arrow">→</div>
+        <div class="node b"><div class="t">6 · MODEL</div><div class="s">TabTransformer → 3 logits</div></div>
+      </div>
+      <div class="flow rows">
+        <div class="node c"><div class="t">7 · SOFTMAX / 5</div><div class="s">temperature = 5.0 → probabilities</div></div>
+        <div class="arrow">→</div>
+        <div class="node l"><div class="t">8 · RISK SCORE</div><div class="s">weighted 0/50/100 → 0–1</div></div>
+        <div class="arrow">→</div>
+        <div class="node k"><div class="t">9 · SAVE</div><div class="s">predictions collection</div></div>
+      </div>
+      <div class="flow rows">
+        <div class="node p"><div class="t">10 · LLM</div><div class="s">summary + recommendations</div></div>
+        <div class="arrow">→</div>
+        <div class="node o"><div class="t">11 · SAVE REPORT</div><div class="s">llm_reports collection</div></div>
+        <div class="arrow">→</div>
+        <div class="node b"><div class="t">12 · RENDER</div><div class="s">gauge + AI card on dashboard</div></div>
+      </div>
+    </div>
+
+    <h4 style="margin-top:26px;">⬇ Request / response sequence</h4>
+    <div class="diagram">
+      <svg viewBox="0 0 1000 660" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Request and response sequence diagram">
+        <rect x="15" y="21" width="210" height="60" rx="8" fill="#111"/>
+        <rect x="15" y="16" width="210" height="60" rx="8" fill="#FFE066" stroke="#111" stroke-width="3"/>
+        <text x="120" y="46" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="800" fill="#111" text-anchor="middle">DOCTOR</text>
+        <text x="120" y="64" font-family="JetBrains Mono, Consolas, monospace" font-size="10" fill="#3a3623" text-anchor="middle">user</text>
+
+        <rect x="268" y="21" width="210" height="60" rx="8" fill="#111"/>
+        <rect x="268" y="16" width="210" height="60" rx="8" fill="#57E6E6" stroke="#111" stroke-width="3"/>
+        <text x="373" y="46" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="800" fill="#111" text-anchor="middle">FRONTEND</text>
+        <text x="373" y="64" font-family="JetBrains Mono, Consolas, monospace" font-size="10" fill="#3a3623" text-anchor="middle">Next.js · Vercel</text>
+
+        <rect x="521" y="21" width="210" height="60" rx="8" fill="#111"/>
+        <rect x="521" y="16" width="210" height="60" rx="8" fill="#B8F15A" stroke="#111" stroke-width="3"/>
+        <text x="626" y="46" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="800" fill="#111" text-anchor="middle">FASTAPI</text>
+        <text x="626" y="64" font-family="JetBrains Mono, Consolas, monospace" font-size="10" fill="#3a3623" text-anchor="middle">Render · :8000</text>
+
+        <rect x="774" y="21" width="210" height="60" rx="8" fill="#111"/>
+        <rect x="774" y="16" width="210" height="60" rx="8" fill="#FF9F45" stroke="#111" stroke-width="3"/>
+        <text x="879" y="46" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="800" fill="#111" text-anchor="middle">MONGO + LLM</text>
+        <text x="879" y="64" font-family="JetBrains Mono, Consolas, monospace" font-size="10" fill="#3a3623" text-anchor="middle">storage · AI</text>
+
+        <line x1="120" y1="82" x2="120" y2="600" stroke="#111" stroke-width="2" stroke-dasharray="6 6" opacity="0.25"/>
+        <line x1="373" y1="82" x2="373" y2="600" stroke="#111" stroke-width="2" stroke-dasharray="6 6" opacity="0.25"/>
+        <line x1="626" y1="82" x2="626" y2="600" stroke="#111" stroke-width="2" stroke-dasharray="6 6" opacity="0.25"/>
+        <line x1="879" y1="82" x2="879" y2="600" stroke="#111" stroke-width="2" stroke-dasharray="6 6" opacity="0.25"/>
+
+        <line x1="120" y1="130" x2="373" y2="130" stroke="#111" stroke-width="3"/>
+        <polygon points="358,121 358,139 373,130" fill="#111"/>
+        <rect x="206" y="98" width="81" height="22" rx="6" fill="#FFE066" stroke="#111" stroke-width="2"/>
+        <text x="246" y="114" font-family="JetBrains Mono, Consolas, monospace" font-size="11" font-weight="700" fill="#111" text-anchor="middle">1 · Login</text>
+
+        <line x1="373" y1="198" x2="626" y2="198" stroke="#111" stroke-width="3"/>
+        <polygon points="611,189 611,207 626,198" fill="#111"/>
+        <rect x="407" y="166" width="183" height="22" rx="6" fill="#57E6E6" stroke="#111" stroke-width="2"/>
+        <text x="499" y="182" font-family="JetBrains Mono, Consolas, monospace" font-size="11" font-weight="700" fill="#111" text-anchor="middle">2 · POST /api/auth/login</text>
+
+        <line x1="626" y1="266" x2="373" y2="266" stroke="#111" stroke-width="3" stroke-dasharray="8 6"/>
+        <polygon points="388,257 388,275 373,266" fill="#111"/>
+        <rect x="445" y="234" width="108" height="22" rx="6" fill="#DEF7D6" stroke="#111" stroke-width="2"/>
+        <text x="499" y="250" font-family="JetBrains Mono, Consolas, monospace" font-size="11" font-weight="700" fill="#111" text-anchor="middle">3 · JWT token</text>
+
+        <line x1="373" y1="334" x2="626" y2="334" stroke="#111" stroke-width="3"/>
+        <polygon points="611,325 611,343 626,334" fill="#111"/>
+        <rect x="404" y="302" width="190" height="22" rx="6" fill="#B8F15A" stroke="#111" stroke-width="2"/>
+        <text x="499" y="318" font-family="JetBrains Mono, Consolas, monospace" font-size="11" font-weight="700" fill="#111" text-anchor="middle">4 · POST /api/predictions</text>
+
+        <line x1="626" y1="402" x2="879" y2="402" stroke="#111" stroke-width="3"/>
+        <polygon points="864,393 864,411 879,402" fill="#111"/>
+        <rect x="647" y="370" width="210" height="22" rx="6" fill="#FF9F45" stroke="#111" stroke-width="2"/>
+        <text x="752" y="386" font-family="JetBrains Mono, Consolas, monospace" font-size="11" font-weight="700" fill="#111" text-anchor="middle">5 · predict · save · report</text>
+
+        <line x1="626" y1="470" x2="373" y2="470" stroke="#111" stroke-width="3" stroke-dasharray="8 6"/>
+        <polygon points="388,461 388,479 373,470" fill="#111"/>
+        <rect x="407" y="438" width="183" height="22" rx="6" fill="#FFDDF4" stroke="#111" stroke-width="2"/>
+        <text x="499" y="454" font-family="JetBrains Mono, Consolas, monospace" font-size="11" font-weight="700" fill="#111" text-anchor="middle">6 · JSON result + report</text>
+
+        <line x1="373" y1="538" x2="120" y2="538" stroke="#111" stroke-width="3" stroke-dasharray="8 6"/>
+        <polygon points="135,529 135,547 120,538" fill="#111"/>
+        <rect x="154" y="506" width="183" height="22" rx="6" fill="#C6A0FF" stroke="#111" stroke-width="2"/>
+        <text x="246" y="522" font-family="JetBrains Mono, Consolas, monospace" font-size="11" font-weight="700" fill="#111" text-anchor="middle">7 · show gauge + AI card</text>
+
+        <line x1="42" y1="628" x2="96" y2="628" stroke="#111" stroke-width="3"/>
+        <polygon points="96,621 96,635 109,628" fill="#111"/>
+        <text x="117" y="632" font-family="JetBrains Mono, Consolas, monospace" font-size="10" font-weight="700" fill="#111">request (goes right)</text>
+        <line x1="270" y1="628" x2="324" y2="628" stroke="#111" stroke-width="3" stroke-dasharray="8 6"/>
+        <polygon points="324,621 324,635 337,628" fill="#111"/>
+        <text x="345" y="632" font-family="JetBrains Mono, Consolas, monospace" font-size="10" font-weight="700" fill="#111">response (comes back)</text>
+      </svg>
+    </div>
+
+    <div class="callout warn">
+      <span class="tag">Timeouts &amp; resilience</span>
+      The dashboard shows "AI is taking longer than usual" after 5 seconds and aborts the request at
+      35 seconds. If aborted, it tells the doctor to retry — protecting against a slow LLM without
+      ever losing the already-saved prediction.
+    </div>
+  </section>
+
+  <!-- ============================ 12 DEPLOY ============================ -->
+  <section id="deploy">
+    <span class="eyebrow">12 · Deployment</span>
+    <h2>How the project is shipped and run</h2>
+    <p class="lead">
+      Everything is containerised with <strong>Docker</strong>. One command
+      (<code>docker-compose up --build</code>) starts the database, the API and the frontend together.
+    </p>
+
+    <div class="grid g3">
+      <div class="card tint-cyan">
+        <h3>🗄 mongo</h3>
+        <p class="mono" style="font-size:.8rem;">image: mongo:7</p>
+        <p class="muted">Port <strong>27017</strong> · persistent volume <code>mongo_data</code></p>
+      </div>
+      <div class="card tint-lime">
+        <h3>⚙ api</h3>
+        <p class="mono" style="font-size:.8rem;">backend/deploy/Dockerfile.api</p>
+        <p class="muted">Port <strong>8000</strong> · python:3.10-slim · waits for mongo · CPU model</p>
+      </div>
+      <div class="card tint-yellow">
+        <h3>🖥 frontend</h3>
+        <p class="mono" style="font-size:.8rem;">Dockerfile.frontend</p>
+        <p class="muted">Port <strong>3000</strong> · node:20-alpine · Next.js standalone build</p>
+      </div>
+    </div>
+
+    <h4 style="margin-top:28px;">🐳 Container build strategy</h4>
+    <div class="grid g2">
+      <div class="card">
+        <h4>API image</h4>
+        <pre><span class="kw">FROM</span> python:3.10-slim
+<span class="kw">WORKDIR</span> /app
+<span class="kw">RUN</span> pip install -r requirements.txt
+<span class="kw">COPY</span> . .
+<span class="kw">EXPOSE</span> 8000
+<span class="cm"># healthcheck hits /health every 30s</span>
+<span class="kw">CMD</span> uvicorn backend.deploy.api:app \
+     --host 0.0.0.0 --port 8000</pre>
+      </div>
+      <div class="card">
+        <h4>Frontend image (multi-stage)</h4>
+        <pre><span class="cm"># Stage 1: install deps</span>
+<span class="kw">FROM</span> node:20-alpine <span class="kw">AS</span> deps
+<span class="cm"># Stage 2: next build (standalone)</span>
+<span class="cm"># Stage 3: tiny runner image,</span>
+<span class="cm">#   only the compiled output,</span>
+<span class="cm">#   runs as non-root user</span>
+<span class="kw">CMD</span> ["node","server.js"]</pre>
+      </div>
+    </div>
+
+    <h4 style="margin-top:28px;">🔄 CI/CD pipeline (GitHub Actions)</h4>
+    <div class="diagram">
+      <svg viewBox="0 0 980 275" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CI pipeline">
+        <defs>
+          <marker id="ah6" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 z" fill="#111111"/>
+          </marker>
+          <style>
+            .pb{stroke:#111;stroke-width:3;rx:8;}
+            .pt{font-family:monospace;font-weight:800;font-size:12.5px;fill:#111;}
+            .ps{font-family:monospace;font-size:10px;fill:#5b5642;}
+            .pl{font-family:monospace;font-size:9.5px;font-weight:700;fill:#111;}
+            .pf{stroke:#111;stroke-width:3;fill:none;marker-end:url(#ah6);}
+          </style>
+        </defs>
+
+        <rect class="pb" x="20" y="95" width="150" height="70" fill="#E7E3D4"/>
+        <text class="pt" x="36" y="124">PUSH TO MAIN</text>
+        <text class="ps" x="36" y="144">or open a PR</text>
+
+        <line class="pf" x1="170" y1="130" x2="240" y2="50"/>
+        <line class="pf" x1="170" y1="130" x2="240" y2="130"/>
+        <line class="pf" x1="170" y1="130" x2="240" y2="210"/>
+
+        <rect class="pb" x="240" y="20" width="170" height="60" fill="#FFE066"/>
+        <text class="pt" x="256" y="42">LINT</text>
+        <text class="ps" x="256" y="62">ruff + black</text>
+
+        <rect class="pb" x="240" y="100" width="170" height="60" fill="#57E6E6"/>
+        <text class="pt" x="256" y="122">TEST BACKEND</text>
+        <text class="ps" x="256" y="142">import smoke tests</text>
+
+        <rect class="pb" x="240" y="180" width="170" height="60" fill="#FF6BD6"/>
+        <text class="pt" x="256" y="202">TEST FRONTEND</text>
+        <text class="ps" x="256" y="222">npm ci + build</text>
+
+        <line class="pf" x1="410" y1="50" x2="445" y2="50"/>
+        <line class="pf" x1="410" y1="130" x2="445" y2="130"/>
+        <line class="pf" x1="410" y1="210" x2="445" y2="210"/>
+        <line x1="445" y1="50" x2="445" y2="210" stroke="#111" stroke-width="3"/>
+        <line class="pf" x1="445" y1="130" x2="500" y2="130"/>
+
+        <rect class="pb" x="500" y="95" width="170" height="70" fill="#B8F15A"/>
+        <text class="pt" x="516" y="124">BUILD DOCKER</text>
+        <text class="ps" x="516" y="144">api + frontend</text>
+
+        <line class="pf" x1="670" y1="130" x2="740" y2="130"/>
+
+        <rect class="pb" x="740" y="95" width="220" height="70" fill="#FF9F45"/>
+        <text class="pt" x="756" y="124">PUSH TO GHCR</text>
+        <text class="ps" x="756" y="144">ghcr.io/.../api:latest</text>
+
+        <text class="pl" x="180" y="258">3 jobs run in parallel</text>
+        <text class="pl" x="452" y="258">all must pass</text>
+      </svg>
+    </div>
+    <p class="muted">The pipeline only pushes images on a push to <code>main</code>; pull requests run the
+      lint/test jobs without publishing.</p>
+
+    <h4 style="margin-top:28px;">☁ Live hosting (from the code)</h4>
+    <table>
+      <thead><tr><th>Piece</th><th>Where it runs</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Frontend</td><td><strong>Vercel</strong></td><td>CORS allow-list includes <code>intubation-project.vercel.app</code> + preview regex</td></tr>
+        <tr><td>Backend API</td><td><strong>Render</strong> (Docker web service)</td><td><code>render.yaml</code> defines <code>airway-api</code></td></tr>
+        <tr><td>Database</td><td>MongoDB (cloud Atlas / managed)</td><td><code>MONGO_URL</code> env var</td></tr>
+        <tr><td>LLM</td><td>OpenRouter API (also Groq / Ollama supported)</td><td><code>LLM_API_URL</code> env var</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <span class="tag">Local run cheat-sheet</span>
+      <div class="flow rows" style="margin-top:6px;">
+        <div class="node k"><div class="t">docker-compose up --build</div><div class="s">starts mongo + api + frontend</div></div>
+        <div class="node c"><div class="t">seed users</div><div class="s">python scripts/seed_db.py</div></div>
+        <div class="node l"><div class="t">open app</div><div class="s">http://localhost:3000</div></div>
+        <div class="node p"><div class="t">log in</div><div class="s">admin@airwaymd.com / admin123</div></div>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <span class="tag">Known gotchas</span>
+      <ul style="margin:.4em 0 0;padding-left:18px;">
+        <li>The 4 GB GPU (GTX 1650 Ti) forces <code>MODEL_DEVICE=cpu</code> in containers.</li>
+        <li>Docker volume paths in the compose file are Windows-absolute (<code>D:/...</code>) in some
+          versions — they must be edited for Linux/macOS.</li>
+        <li>The old docs reference a <code>frontend/</code> folder, but the real Next.js app lives in
+          <code>src/</code> at the repo root.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================ 13 DESIGN ============================ -->
+  <section id="design">
+    <span class="eyebrow">13 · Why It Looks Like This</span>
+    <h2>The design language: Neo-Brutalism</h2>
+    <p class="lead">
+      The app (and this document) uses <strong>Neo-Brutalism</strong> — thick black outlines, hard
+      offset shadows, flat loud colours and big bold type. It is intentionally the opposite of the
+      soft, grey, gradient-heavy "generic SaaS" look.
+    </p>
+
+    <div class="grid g2">
+      <div class="card">
+        <h4>🎨 The rules</h4>
+        <ul style="padding-left:18px;">
+          <li><strong>3px black borders</strong> on every card, button and input.</li>
+          <li><strong>Hard offset shadows</strong> (<code>4px 4px 0 #111</code>) — never blurred.</li>
+          <li><strong>Flat colours</strong> — no gradients on core UI (cream, yellow, cyan, lime, pink, orange).</li>
+          <li><strong>Buttons "press"</strong> — on hover they shift into their own shadow.</li>
+          <li><strong>Bold typography</strong> — Playfair Display for headings, Inter for body,
+            JetBrains Mono for technical values.</li>
+          <li><strong>High contrast</strong> — black text on light panels, yellow-on-black accents.</li>
+        </ul>
+      </div>
+      <div class="card tint-yellow">
+        <h4>💡 Why it fits a clinical tool</h4>
+        <ul style="padding-left:18px;">
+          <li><strong>Clarity under pressure.</strong> A doctor reading a risk result needs instant
+            hierarchy, not decoration. Brutalism is unambiguous.</li>
+          <li><strong>Colour = meaning.</strong> Green/orange/red map directly to low/moderate/high risk
+            everywhere in the app, so the eye learns the language instantly.</li>
+          <li><strong>Distinctive &amp; memorable.</strong> It does not look like every other medical
+            dashboard — deliberate, confident, easy to demo.</li>
+          <li><strong>Accessible by default.</strong> Thick borders and high contrast help
+            low-vision users and work on cheap hospital monitors.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card tint-grey">
+      <h4>🎛 Risk colour system (used across the whole app)</h4>
+      <div class="grid g3">
+        <div class="stat" style="background:#DEF7D6;"><span class="big" style="color:#1c6a2a;">🟢</span><span class="lbl">Easy · green-500</span></div>
+        <div class="stat" style="background:#FFE8C7;"><span class="big" style="color:#8a4b00;">🟠</span><span class="lbl">Moderate · warning-500</span></div>
+        <div class="stat" style="background:#FFDCDC;"><span class="big" style="color:#8a1010;">🔴</span><span class="lbl">Difficult · danger-500</span></div>
+      </div>
+      <p class="muted" style="margin-top:12px;">The background is a warm cream (<code>#F5F1DC</code>) in
+        light mode and near-black (<code>#121212</code>) in dark mode, so long shifts don't strain the eyes.</p>
+    </div>
+  </section>
+
+  <!-- ============================ 14 STACK ============================ -->
+  <section id="stack">
+    <span class="eyebrow">14 · Tech Stack</span>
+    <h2>Everything the project is built with</h2>
+    <table>
+      <thead><tr><th>Layer</th><th>Technology</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td>Frontend</td><td>Next.js 14 · React 18 · TypeScript</td><td>The dashboard UI</td></tr>
+        <tr><td>Styling</td><td>Tailwind CSS · lucide-react · clsx</td><td>Neo-Brutalist design + icons</td></tr>
+        <tr><td>Charts</td><td>Recharts</td><td>Stats / probability visuals</td></tr>
+        <tr><td>Backend</td><td>FastAPI · Uvicorn · Pydantic</td><td>REST API + validation</td></tr>
+        <tr><td>Auth</td><td>python-jose (JWT) · passlib/bcrypt</td><td>Login &amp; password security</td></tr>
+        <tr><td>Database</td><td>MongoDB · Motor (async)</td><td>Users, patients, predictions, reports</td></tr>
+        <tr><td>ML (production)</td><td>PyTorch · TabTransformer</td><td>Risk prediction</td></tr>
+        <tr><td>ML (baselines)</td><td>XGBoost · scikit-learn</td><td>Model comparison</td></tr>
+        <tr><td>Data</td><td>pandas · NumPy · openpyxl</td><td>Preprocessing &amp; synthetic data</td></tr>
+        <tr><td>LLM</td><td>OpenAI-compatible client → OpenRouter / Groq / Ollama</td><td>Clinical report generation</td></tr>
+        <tr><td>Packaging</td><td>Docker · docker-compose</td><td>One-command local stack</td></tr>
+        <tr><td>CI/CD</td><td>GitHub Actions → GHCR</td><td>Lint, test, build, publish</td></tr>
+        <tr><td>Mobile (optional)</td><td>Expo / React Native</td><td>Separate companion app in <code>mobile/</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="card flat tint-cyan" style="margin-top:24px;">
+      <h3><span class="num">✓</span> Summary</h3>
+      <p style="margin-bottom:0;">
+        This project is a complete vertical slice of a medical ML product: starting from
+        <strong>synthetic data</strong>, through <strong>preprocessing and a TabTransformer model</strong>,
+        wrapped in a <strong>secure FastAPI backend</strong>, presented in a
+        <strong>Neo-Brutalist Next.js dashboard</strong>, enriched by an <strong>LLM assistant</strong>,
+        and shipped with <strong>Docker and CI/CD</strong>. Every layer is explained above with a
+        diagram and plain-English text.
+      </p>
+    </div>
+  </section>
+
+  <section id="hld">
+    <span class="eyebrow">15 · High-Level System Design</span>
+    <h2>The whole system in one architecture diagram</h2>
+    <p class="lead">
+      This is the master view: every service, where it runs, and how it talks to the others. Read it
+      top-to-bottom — a doctor's request flows down through the frontend and backend to the model,
+      database and LLM, then returns as a result.
+    </p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 1040 790" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="High-level system design architecture">
+        <defs>
+          <marker id="ah7" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 z" fill="#111111"/>
+          </marker>
+          <style>
+            .hb{stroke:#111;stroke-width:3;rx:8;}
+            .ht{font-family:monospace;font-weight:800;font-size:13.5px;fill:#111;}
+            .hs{font-family:monospace;font-size:10.5px;fill:#5b5642;}
+            .hl{font-family:monospace;font-size:9.5px;font-weight:700;fill:#111;}
+            .hf{stroke:#111;stroke-width:3;fill:none;marker-end:url(#ah7);}
+            .hd{stroke:#111;stroke-width:3;fill:none;marker-end:url(#ah7);stroke-dasharray:8 6;}
+          </style>
+        </defs>
+
+        <rect class="hb" x="360" y="14" width="280" height="60" fill="#E7E3D4"/>
+        <text class="ht" x="378" y="44">🩺 DOCTOR'S BROWSER</text>
+        <text class="hs" x="378" y="62">any modern browser</text>
+
+        <line class="hf" x1="500" y1="74" x2="500" y2="118"/>
+        <text class="hl" x="510" y="100">HTTPS</text>
+
+        <rect class="hb" x="360" y="118" width="280" height="64" fill="#FFE066"/>
+        <text class="ht" x="378" y="146">▲ VERCEL — Next.js Frontend</text>
+        <text class="hs" x="378" y="166">React · Tailwind · :3000</text>
+
+        <line class="hf" x1="500" y1="182" x2="500" y2="240"/>
+        <text class="hl" x="510" y="215">REST + JWT</text>
+
+        <rect class="hb" x="340" y="240" width="320" height="110" fill="#57E6E6"/>
+        <text class="ht" x="358" y="270">⚙ RENDER — FastAPI Backend</text>
+        <text class="hs" x="358" y="292">Python · Uvicorn · :8000</text>
+        <text class="hs" x="358" y="310">JWT auth · validation · routing</text>
+        <text class="hs" x="358" y="330">loads ML model · assembles prompts</text>
+
+        <path class="hf" d="M340,295 H170 V410"/>
+        <text class="hl" x="182" y="288">run model</text>
+
+        <path class="hf" d="M660,295 H830 V410"/>
+        <text class="hl" x="676" y="288">generate report</text>
+
+        <line class="hf" x1="500" y1="350" x2="500" y2="420"/>
+        <text class="hl" x="510" y="388">read / write</text>
+
+        <rect class="hb" x="30" y="410" width="280" height="90" fill="#B8F15A"/>
+        <text class="ht" x="48" y="440">🧠 ML MODEL (in-memory)</text>
+        <text class="hs" x="48" y="462">TabTransformer · tabular_best.pt</text>
+        <text class="hs" x="48" y="482">85.9% acc · 0.97 AUC · CPU</text>
+
+        <rect class="hb" x="690" y="410" width="280" height="90" fill="#FF6BD6"/>
+        <text class="ht" x="708" y="440">✨ LLM SERVICE (external)</text>
+        <text class="hs" x="708" y="462">OpenRouter / Groq / Ollama</text>
+        <text class="hs" x="708" y="482">Qwen 2.5 72B · writes report</text>
+
+        <rect class="hb" x="360" y="420" width="280" height="90" fill="#FF9F45"/>
+        <text class="ht" x="378" y="450">🗄 MONGODB (Atlas)</text>
+        <text class="hs" x="378" y="472">users · patients · predictions</text>
+        <text class="hs" x="378" y="492">llm_reports · :27017</text>
+
+        <line class="hf" x1="170" y1="630" x2="170" y2="500"/>
+        <text class="hl" x="180" y="570">produces checkpoint</text>
+
+        <rect class="hb" x="30" y="630" width="280" height="90" fill="#C6A0FF"/>
+        <text class="ht" x="48" y="660">🏋 OFFLINE TRAINING</text>
+        <text class="hs" x="48" y="682">train_tabular / xgboost / rf</text>
+        <text class="hs" x="48" y="702">writes checkpoints/*.pt</text>
+
+        <rect class="hb" x="370" y="630" width="270" height="70" fill="#B8F15A"/>
+        <text class="ht" x="388" y="660">🔄 GITHUB ACTIONS</text>
+        <text class="hs" x="388" y="682">lint · test · build (CI/CD)</text>
+
+        <line class="hf" x1="640" y1="665" x2="700" y2="665"/>
+        <text class="hl" x="640" y="622">build &amp; push</text>
+
+        <rect class="hb" x="700" y="630" width="260" height="70" fill="#FF9F45"/>
+        <text class="ht" x="718" y="660">📦 GHCR REGISTRY</text>
+        <text class="hs" x="718" y="682">api + frontend images</text>
+
+        <path class="hd" d="M960,665 H1010 V205 H660 V240"/>
+        <text class="hl" x="876" y="196">pull image &amp; deploy</text>
+      </svg>
+    </div>
+
+    <h4 style="margin-top:26px;">🔁 Who talks to whom, and how</h4>
+    <table>
+      <thead><tr><th>From → To</th><th>Protocol</th><th>What travels</th></tr></thead>
+      <tbody>
+        <tr><td>Browser → Vercel frontend</td><td>HTTPS</td><td>The Next.js app (HTML/JS)</td></tr>
+        <tr><td>Frontend → FastAPI (Render)</td><td>HTTPS REST</td><td>JSON request + JWT in the <code>Authorization</code> header</td></tr>
+        <tr><td>FastAPI → MongoDB</td><td>MongoDB wire protocol (Motor, async)</td><td>User, patient, prediction and report documents</td></tr>
+        <tr><td>FastAPI → ML model</td><td>In-process Python call</td><td>Scaled tensors in → probabilities out</td></tr>
+        <tr><td>FastAPI → LLM</td><td>HTTPS (OpenAI-compatible)</td><td>Prompt text in → clinical bullets out</td></tr>
+        <tr><td>GitHub Actions → GHCR</td><td>Docker registry API</td><td>Built API + frontend container images</td></tr>
+        <tr><td>GHCR → Render / hosting</td><td>Docker pull</td><td>Deployable images</td></tr>
+        <tr><td>Training scripts → checkpoints</td><td>Local file write (offline)</td><td><code>tabular_best.pt</code>, scaler, baselines</td></tr>
+      </tbody>
+    </table>
+
+    <div class="grid g2" style="margin-top:20px;">
+      <div class="card tint-yellow">
+        <h4>🧭 Read the diagram in 3 layers</h4>
+        <ol style="padding-left:18px;margin:0;">
+          <li><strong>Presentation</strong> — the doctor + browser + Vercel-hosted Next.js UI.</li>
+          <li><strong>Application</strong> — the Render-hosted FastAPI backend, which owns all logic
+            (auth, ML inference, risk scoring, LLM calls, DB access).</li>
+          <li><strong>Data &amp; AI services</strong> — MongoDB for storage, the external LLM for text,
+            and the trained model loaded in the backend's memory.</li>
+        </ol>
+      </div>
+      <div class="card tint-cyan">
+        <h4>🔒 Trust boundaries</h4>
+        <ul style="padding-left:18px;margin:0;">
+          <li>The browser <strong>never</strong> touches MongoDB or the model directly — only the API.</li>
+          <li>Every protected call carries a <strong>JWT</strong>; the API re-checks the role from the DB.</li>
+          <li>Patient data leaves the system only to the configured LLM endpoint, and only as the
+            structured prompt the backend builds.</li>
+          <li>Images are built once in CI, stored in GHCR, and deployed as immutable containers.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <p style="margin:0 0 6px;">⚕ <strong>AIRWAY MD</strong> · Multimodal Difficult-Airway Prediction · Documentation</p>
+  <p style="margin:0;">Generated from the actual source in <code>D:\Minor_Project</code> · read-only project documentation</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+flowchart TD
+  subgraph DATA["Data"]
+    GEN["scripts/generate_synthetic_data.py<br/>(synthetic clinical profiles)"]
+    XLSX[(dataset.xlsx<br/>2500 rows · 3-class target)]
+  end
+
+  subgraph TRAIN["Training - offline (backend/training/train_tabular.py)"]
+    SPLIT["Stratified split<br/>70% train / 15% val / 15% test"]
+    SCALE["StandardScaler fit on 7 numerics<br/>LabelEncoder fit on 22 categoricals"]
+    BUILD["TabularModel:<br/>22 categorical embeddings (dim 64)<br/>+ projection of 7 numerics + 3 transformer blocks<br/>+ 2-layer classifier (3 classes)"]
+    LOSS["CrossEntropyLoss with class weights<br/>(compensates class imbalance)"]
+    OPT["AdamW (lr 1e-3) + ReduceLROnPlateau<br/>up to 100 epochs · early stop (patience 15)"]
+    CKPT["Save best-val state dict<br/>checkpoints/tabular_best.pt"]
+    SCALER_PKL["Save fitted StandardScaler<br/>checkpoints/tabular_scaler.pkl"]
+  end
+
+  subgraph EVAL["Evaluation on hold-out test set"]
+    TEST["Test split (never seen in training)"]
+    MET["accuracy · AUC-ROC (one-vs-rest)<br/>per-class sensitivity + specificity"]
+  end
+
+  subgraph SERVE["Serving - online (backend/deploy)"]
+    LOAD["Startup: model_loader builds TabularModel<br/>loads tabular_best.pt · .eval() · runs on CPU"]
+    PREP["_prepare_input per request:<br/>7 numerics <- StandardScaler.transform<br/>22 categoricals -> hand-coded indices<br/>(order matches training)"]
+    FWD["model.forward -> softmax(logits / 5)<br/>temperature-softened probabilities"]
+    OUT["argmax -> class (Easy/Moderate/Difficult)<br/>+ confidence<br/>+ risk_score = weighted probs (0 / 50 / 100)"]
+  end
+
+  subgraph CONSUME["Consumption"]
+    UI["FastAPI response: probabilities, class, risk<br/>-> dashboard gauge + badges<br/>-> LLM summary + recommendations"]
+  end
+
+  GEN --> XLSX
+  XLSX --> SPLIT
+  SPLIT --> SCALE
+  SCALE --> BUILD
+  BUILD --> LOSS
+  LOSS --> OPT
+  OPT -->|keeps weights of best val loss| CKPT
+  OPT --> SCALER_PKL
+  SPLIT --> TEST
+  TEST --> MET
+  CKPT --> LOAD
+  SCALER_PKL --> PREP
+  LOAD --> FWD
+  PREP --> FWD
+  FWD --> OUT
+  OUT --> UI
