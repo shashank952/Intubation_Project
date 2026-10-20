@@ -3,6 +3,21 @@
 Notable changes to the Intubation_Project. Format follows
 [Keep a Changelog](https://keepachangelog.com/); entries grouped by date.
 
+## 2026-10-20 — Neo-brutalist loading system
+
+- New `frontend/src/components/NeoLoader.tsx` with `inline` / `block` / `page`
+  variants: brand-colored pulse blocks that step mechanically (`steps(1, end)`,
+  hard 2px borders + collapsing offset shadows) and a photocopier-style scan
+  bar. Works across all 7 themes via `--brand-*` CSS variables, light + dark,
+  `prefers-reduced-motion` fallback (static fill), `role="status"` +
+  screen-reader text.
+- New `frontend/src/app/loading.tsx`: branded full-page loader for route
+  transitions.
+- Replaced the ad-hoc spinners in login, signup, patient form, reports
+  (page + per-report row), dashboard background-assessment banner, AI
+  assessment card (slow-response notice) and background-task toast.
+  The 28px delete-icon spinner stays as a micro icon.
+
 ## 2026-10-20 — Removed local demo mode
 
 - Deleted `frontend/src/lib/localDemo.ts` and `frontend/src/lib/demoData.ts`.

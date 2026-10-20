@@ -7,6 +7,7 @@ import { Stethoscope, Eye, EyeOff, AlertCircle, LogIn, Clock } from 'lucide-reac
 import clsx from 'clsx';
 import { login, getToken, clearToken } from '@/lib/api';
 import { BASE_URL } from '@/lib/api';
+import NeoLoader from '@/components/NeoLoader';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -200,28 +201,7 @@ export default function LoginPage() {
                   : 'bg-brand-500 hover:bg-brand-400 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#111111] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none'
               )}
             >
-              {loading && (
-                <svg
-                  className="animate-spin h-4 w-4 text-black"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-              )}
+              {loading && <NeoLoader variant="inline" label="Signing in" />}
               {loading ? 'Signing In...' : 'Sign In'}
               {!loading && <LogIn className="h-4 w-4" />}
             </button>

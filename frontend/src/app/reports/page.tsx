@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronUp, Sparkles, Stethoscope,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
+import NeoLoader from '@/components/NeoLoader';
 import { getToken, getUser, getPredictions, getPredictionReport } from '@/lib/api';
 import type { PredictionHistory, LLMReport } from '@/types';
 import clsx from 'clsx';
@@ -71,7 +72,7 @@ export default function ReportsPage() {
         <main className="p-4 sm:p-6 lg:p-8 space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <div className="animate-spin h-8 w-8 border-4 border-neutral-600 border-t-transparent rounded-sm" />
+              <NeoLoader variant="block" label="Loading assessments" className="max-w-xs" />
             </div>
           ) : predictions.length === 0 ? (
             <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card p-10 text-center">
@@ -165,7 +166,7 @@ export default function ReportsPage() {
                       {/* LLM Report */}
                       {loadingReport === pred.id ? (
                         <div className="flex items-center gap-2 py-4 text-sm text-gray-400">
-                          <div className="animate-spin h-4 w-4 border-2 border-neutral-600 border-t-transparent rounded-sm" />
+                          <NeoLoader variant="inline" label="Loading AI report" />
                           Loading AI report...
                         </div>
                       ) : report ? (

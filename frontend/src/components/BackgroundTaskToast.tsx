@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, CheckCircle2, X, ArrowRight } from 'lucide-react';
+import { CheckCircle2, X, ArrowRight } from 'lucide-react';
+import NeoLoader from '@/components/NeoLoader';
 import clsx from 'clsx';
 import { usePrediction } from '@/lib/predictionStore';
 
@@ -37,7 +38,7 @@ export default function BackgroundTaskToast() {
     content = (
       <>
         <div className="flex items-center gap-2">
-          <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-brand-600 dark:text-brand-400" />
+          <NeoLoader variant="inline" label="Assessing patient" />
           <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-50">
             Assessing {patientId}…
           </span>

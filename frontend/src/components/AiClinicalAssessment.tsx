@@ -1,6 +1,7 @@
 'use client';
 
-import { Sparkles, Stethoscope, Lightbulb, AlertTriangle, Loader2 } from 'lucide-react';
+import { Sparkles, Stethoscope, Lightbulb, AlertTriangle } from 'lucide-react';
+import NeoLoader from '@/components/NeoLoader';
 import clsx from 'clsx';
 
 interface AiClinicalAssessmentProps {
@@ -34,7 +35,7 @@ export default function AiClinicalAssessment({
       <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card p-5 animate-fade-in">
         {slow && (
           <div className="flex items-center gap-2 p-2.5 mb-4 bg-warning-50 dark:bg-warning-900/20 border-2 border-black rounded-[4px]">
-            <Loader2 className="h-4 w-4 animate-spin text-warning-600 flex-shrink-0" />
+            <NeoLoader variant="inline" label="Waiting for AI response" />
             <p className="text-xs font-medium text-warning-800 dark:text-warning-300">
               The LLM response is taking longer than usual. Please wait…
             </p>

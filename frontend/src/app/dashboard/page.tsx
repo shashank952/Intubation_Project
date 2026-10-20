@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Edit3, Plus, Activity, Loader2 } from 'lucide-react';
+import { LogOut, User, Edit3, Plus, Activity } from 'lucide-react';
 import clsx from 'clsx';
 import Sidebar from '@/components/Sidebar';
+import NeoLoader from '@/components/NeoLoader';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import RiskPredictionCard from '@/components/RiskPredictionCard';
 import AiClinicalAssessment from '@/components/AiClinicalAssessment';
@@ -240,7 +241,7 @@ export default function DashboardPage() {
 
           {status === 'running' && (
             <div className="flex items-center gap-2.5 rounded-[4px] border-2 border-black bg-brand-100 p-3 animate-fade-in dark:border-neutral-600 dark:bg-brand-900/30">
-              <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-brand-600" />
+              <NeoLoader variant="inline" label="Assessing patient" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-neutral-800 dark:text-brand-300">
                   Assessing {lastSubmittedPatient?.patient_id || 'patient'} in the background…
