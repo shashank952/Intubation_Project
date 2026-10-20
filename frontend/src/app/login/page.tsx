@@ -3,7 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Stethoscope, Eye, EyeOff, AlertCircle, LogIn } from 'lucide-react';
+import { Stethoscope, Eye, EyeOff, AlertCircle, LogIn, Clock } from 'lucide-react';
 import clsx from 'clsx';
 import { login, getToken, clearToken } from '@/lib/api';
 import { BASE_URL } from '@/lib/api';
@@ -16,6 +16,12 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [idleNotice, setIdleNotice] = useState(false);
+
+  useEffect(() => {
+    const reason = new URLSearchParams(window.location.search).get('reason');
+    if (reason === 'idle') setIdleNotice(true);
+  }, []);
 
   // Redirect only if token is valid; clear stale tokens
   useEffect(() => {
@@ -103,6 +109,15 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {idleNotice && (
+              <div className="p-3 bg-neutral-100 border-2 border-black rounded-[4px] flex items-start gap-2.5">
+                <Clock className="h-4 w-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-gray-700">
+                  You were signed out after a period of inactivity. Please sign in again.
+                </p>
+              </div>
+            )}
+
             {/* Email */}
             <div>
               <label

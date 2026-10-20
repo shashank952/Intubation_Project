@@ -7,6 +7,9 @@ export interface AuthResponse {
   access_token: string;
   token_type: string;
   user: User;
+  expires_at?: string;
+  idle_timeout_seconds?: number;
+  warning_seconds?: number;
 }
 
 export interface Patient {
