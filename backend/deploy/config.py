@@ -35,6 +35,13 @@ class Settings(BaseSettings):
 
     model_checkpoint: str = "checkpoints/tabular_best.pt"
     model_device: str = "cpu"
+    # Fail to start when the checkpoint is missing/mismatched. Set false ONLY
+    # for local development — the API then serves random weights (flagged in
+    # /ready and logs) and must never be used in production.
+    model_required: bool = True
+    # Softmax temperature to soften extreme logits (synthetic-data training).
+    # Calibration debt: tune on held-out real data before clinical use.
+    model_softmax_temperature: float = 5.0
 
     # Trust X-Forwarded-For for rate limiting only behind a trusted TLS proxy.
     behind_proxy: bool = False
