@@ -141,7 +141,8 @@ async function apiFetch<T>(
 
 // ---- Auth ----
 
-const LOGIN_TIMEOUT_MS = 10000;
+// Render free tier can take up to ~1 min to wake from sleep; tolerate that cold start.
+const LOGIN_TIMEOUT_MS = 90000;
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
   const controller = new AbortController();
