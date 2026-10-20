@@ -16,7 +16,7 @@ CAT = ["Gender", "Previous_Airway_Records", "Disease_Arthritis", "Disease_Diabet
 EXPECTED = [2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 3, 4, 3, 3, 3, 2]
 MODEL_LOADER = [2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 3, 4, 3, 3, 3, 2]
 
-df = pd.read_excel(ROOT / "dataset.xlsx")
+df = pd.read_excel(ROOT / "data" / "dataset.xlsx")
 print("=== cardinality check (each categorical must contain full 0..k-1) ===")
 allok = True
 for col, k in zip(CAT, EXPECTED):

@@ -33,7 +33,7 @@ random.seed(42)
 np.random.seed(42)
 
 ROOT = Path(__file__).resolve().parent.parent
-DATASET = ROOT / "DATASET"
+DATASET = ROOT / "data" / "raw"
 P1 = DATASET / "AI laryngoscopy.xlsx"
 P2 = DATASET / "AI laryngoscopy2.xlsx"
 N = 2500
@@ -406,7 +406,7 @@ def main():
     col_order = ["Patient_ID"] + FEATURE_COLS + ["Target"]
     df = df[col_order]
 
-    out_path = ROOT / "dataset.xlsx"
+    out_path = ROOT / "data" / "dataset.xlsx"
     df.to_excel(out_path, index=False)
     print(f"Saved training dataset -> {out_path}")
     print(f"\nShape: {df.shape}")

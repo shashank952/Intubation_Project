@@ -13,7 +13,7 @@ import warnings, json, time
 warnings.filterwarnings("ignore")
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-DATA_PATH = ROOT / "dataset.xlsx"
+DATA_PATH = ROOT / "data" / "dataset.xlsx"
 MODEL_PATH = ROOT / "checkpoints" / "xgboost_best.json"
 TT_PATH = ROOT / "checkpoints" / "tabular_best.pt"
 

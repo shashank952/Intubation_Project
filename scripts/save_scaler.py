@@ -21,7 +21,7 @@ NUMERICAL_COLS = [
 TARGET_COL = "Target"
 ID_COL = "Patient_ID"
 
-df = pd.read_excel(ROOT / "dataset.xlsx")
+df = pd.read_excel(ROOT / "data" / "dataset.xlsx")
 ids = df[ID_COL].to_numpy()  # .to_numpy() (not .values) -> plain ndarray for arrow-backed str
 y = df[TARGET_COL].values
 

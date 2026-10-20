@@ -292,12 +292,12 @@ def main():
     col_order = list(seeds.columns) + ["Target"]
     df = df[col_order]
 
-    backup = ROOT / "dataset_original_2500.xlsx"
+    backup = ROOT / "data" / "dataset_original_2500.xlsx"
     if not backup.exists():
-        (ROOT / "dataset.xlsx").rename(backup)
+        (ROOT / "data" / "dataset.xlsx").rename(backup)
         print(f"Backed up original to {backup.name}")
 
-    out_path = ROOT / "dataset.xlsx"
+    out_path = ROOT / "data" / "dataset.xlsx"
     df.to_excel(out_path, index=False)
     print(f"Saved to {out_path}")
     print(f"\nShape: {df.shape}")

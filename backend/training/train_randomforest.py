@@ -13,7 +13,7 @@ import warnings, time
 warnings.filterwarnings("ignore")
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-DATA_PATH = ROOT / "dataset.xlsx"
+DATA_PATH = ROOT / "data" / "dataset.xlsx"
 MODEL_PATH = ROOT / "checkpoints" / "randomforest_best.pkl"
 
 CATEGORICAL_COLS = [

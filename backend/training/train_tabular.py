@@ -171,7 +171,7 @@ def evaluate(model, loader, loss_fn, device, num_classes=3, num_cat=22):
 def main():
     print(f"Device: {DEVICE}")
     print(f"Loading dataset.xlsx...")
-    train_df, val_df, test_df = load_and_split(str(ROOT / "dataset.xlsx"))
+    train_df, val_df, test_df = load_and_split(str(ROOT / "data" / "dataset.xlsx"))
 
     print(f"Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
     print(f"Preprocessing...")

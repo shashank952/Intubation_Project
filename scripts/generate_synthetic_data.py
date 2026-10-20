@@ -261,7 +261,7 @@ def _assign_target(df: pd.DataFrame) -> pd.DataFrame:
 if __name__ == "__main__":
     print(f"Generating {N} synthetic patient records...")
     df = generate_patient_data(N)
-    out_path = Path(__file__).parent.parent / "dataset.xlsx"
+    out_path = Path(__file__).parent.parent / "data" / "dataset.xlsx"
     df.to_excel(out_path, index=False)
     print(f"Saved to {out_path}")
     print(f"\nShape: {df.shape}")
