@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Playfair_Display, Inter, JetBrains_Mono } from 'next/font/google';
+import Providers from '@/components/Providers';
 import './globals.css';
 
 const playfair = Playfair_Display({
@@ -32,9 +33,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable} ${jetbrains.variable}`}>
-      <body className="min-h-screen bg-[#F5F1DC] dark:bg-[#121212] font-body antialiased">
-        {children}
+    <html lang="en" className={`${playfair.variable} ${inter.variable} ${jetbrains.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen bg-paper dark:bg-[#121212] font-body antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var r=document.documentElement;r.setAttribute('data-theme',localStorage.getItem('neo-theme')||'yellow');var d=localStorage.getItem('theme');if(d==='dark'||(!d&&window.matchMedia('(prefers-color-scheme: dark)').matches)){r.classList.add('dark');}}catch(err){}})();",
+          }}
+        />
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -104,9 +104,9 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
 
   const inputClass = (field: string) =>
     clsx(
-      'w-full px-3 py-2 text-sm rounded-[6px] border-2 bg-white dark:bg-neutral-800 transition-smooth focus:outline-none focus:ring-2 shadow-[5px_5px_0_#000000] dark:shadow-[5px_5px_0_#3F3F46]',
+      'w-full px-3 py-2 text-sm rounded-[4px] border-2 bg-white dark:bg-neutral-800 transition-smooth focus:outline-none focus:ring-2 shadow-[5px_5px_0_#111111] dark:shadow-[5px_5px_0_#3F3F46]',
       errors[field]
-        ? 'border-danger-300 focus:ring-danger-200 dark:border-danger-600'
+        ? 'border-danger-500 focus:ring-danger-300 dark:border-danger-500'
         : 'border-black dark:border-neutral-600 focus:ring-brand-300 focus:border-brand-400 dark:focus:border-brand-400 hover:border-neutral-300 dark:hover:border-neutral-500'
     );
 
@@ -118,10 +118,10 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
         type="button"
         onClick={() => setActiveSection(id)}
         className={clsx(
-          'flex flex-1 items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-[5px] transition-smooth',
+          'flex flex-1 items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-[3px] transition-smooth whitespace-nowrap',
           activeSection === id
-            ? 'bg-white dark:bg-neutral-900 text-brand-700 dark:text-brand-300'
-            : 'text-neutral-500 dark:text-neutral-300 hover:text-neutral-700 dark:hover:text-neutral-100'
+            ? 'bg-brand-500 text-black shadow-[2px_2px_0_#111111]'
+            : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200/70 dark:hover:bg-neutral-700'
         )}
       >
         <Icon className="h-3.5 w-3.5" />
@@ -190,12 +190,12 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
   const pad = compact ? 'p-3' : 'p-4';
 
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm">
+    <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card">
       {!compact && (
-        <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-700">
-          <div className="flex items-center justify-between mb-2">
+        <div className="px-4 py-3 border-b-2 border-black dark:border-neutral-600">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center">
+              <div className="h-7 w-7 rounded-[4px] bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center">
                 <Activity className="h-3.5 w-3.5 text-brand-600 dark:text-brand-400" />
               </div>
               <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-50">Patient Entry</span>
@@ -203,27 +203,27 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
             <div className="flex gap-1">
               <button type="button" onClick={() => { handleChange('patient_id', 'TEST-EASY-001'); handleChange('age', '54'); handleChange('gender', 'Female'); handleChange('bmi', '23.7'); handleChange('mallampati_score', '1'); handleChange('tmd', '7.6'); handleChange('neck_circumference', '36.4'); handleChange('mouth_opening', '43.7'); handleChange('smd', '16.1'); handleChange('neck_movement', '96.4'); handleChange('previous_airway_records', 'No'); handleChange('disease_arthritis', 'No'); handleChange('disease_diabetes', 'No'); handleChange('disease_down_syndrome', 'No'); handleChange('breathing_snoring', 'No'); handleChange('breathing_sleep_apnea', 'No'); handleChange('symptom_voice_changes', 'No'); handleChange('symptom_difficulty_swallowing', 'No'); handleChange('symptom_cant_lie_flat', 'No'); handleChange('injury_swelling', 'No'); handleChange('injury_previous_neck_fracture', 'No'); handleChange('previous_emergencies_icu', 'No'); setErrors({}); setActiveSection('demographics'); }}
                 title="Load easy test patient"
-                className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold rounded-sm border border-success-200 bg-success-50 text-success-700 hover:bg-success-100 transition-smooth">
+                className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold rounded-[3px] border-2 border-black bg-success-100 text-success-800 hover:bg-success-200 transition-smooth">
                 <FlaskConical className="h-2.5 w-2.5" /> E
               </button>
               <button type="button" onClick={() => { handleChange('patient_id', 'TEST-MOD-001'); handleChange('age', '54'); handleChange('gender', 'Female'); handleChange('bmi', '32.9'); handleChange('mallampati_score', '4'); handleChange('tmd', '6.1'); handleChange('neck_circumference', '39.2'); handleChange('mouth_opening', '50.9'); handleChange('smd', '15.7'); handleChange('neck_movement', '93.2'); handleChange('previous_airway_records', 'No'); handleChange('disease_arthritis', 'No'); handleChange('disease_diabetes', 'No'); handleChange('disease_down_syndrome', 'No'); handleChange('breathing_snoring', 'Yes'); handleChange('breathing_sleep_apnea', 'No'); handleChange('symptom_voice_changes', 'No'); handleChange('symptom_difficulty_swallowing', 'No'); handleChange('symptom_cant_lie_flat', 'Yes'); handleChange('injury_swelling', 'No'); handleChange('injury_previous_neck_fracture', 'No'); handleChange('previous_emergencies_icu', 'No'); setErrors({}); setActiveSection('demographics'); }}
                 title="Load moderate test patient"
-                className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold rounded-sm border border-warning-200 bg-warning-50 text-warning-700 hover:bg-warning-100 transition-smooth">
+                className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold rounded-[3px] border-2 border-black bg-warning-100 text-warning-800 hover:bg-warning-200 transition-smooth">
                 <FlaskConical className="h-2.5 w-2.5" /> M
               </button>
               <button type="button" onClick={() => { handleChange('patient_id', 'TEST-DIFF-001'); handleChange('age', '58'); handleChange('gender', 'Female'); handleChange('bmi', '50.0'); handleChange('mallampati_score', '4'); handleChange('tmd', '5.7'); handleChange('neck_circumference', '46.8'); handleChange('mouth_opening', '40.0'); handleChange('smd', '18.4'); handleChange('neck_movement', '81.2'); handleChange('previous_airway_records', 'Yes'); handleChange('disease_arthritis', 'No'); handleChange('disease_diabetes', 'Yes'); handleChange('disease_down_syndrome', 'No'); handleChange('breathing_snoring', 'Yes'); handleChange('breathing_sleep_apnea', 'Yes'); handleChange('symptom_voice_changes', 'No'); handleChange('symptom_difficulty_swallowing', 'Yes'); handleChange('symptom_cant_lie_flat', 'Yes'); handleChange('injury_swelling', 'Yes'); handleChange('injury_previous_neck_fracture', 'No'); handleChange('previous_emergencies_icu', 'Yes'); setErrors({}); setActiveSection('demographics'); }}
                 title="Load difficult test patient"
-                className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold rounded-sm border border-danger-200 bg-danger-50 text-danger-700 hover:bg-danger-100 transition-smooth">
+                className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold rounded-[3px] border-2 border-black bg-danger-100 text-danger-800 hover:bg-danger-200 transition-smooth">
                 <FlaskConical className="h-2.5 w-2.5" /> D
               </button>
               <button type="button" onClick={() => { setFormData(generateRandomData()); setErrors({}); setActiveSection('demographics'); }}
                 title="Load random test patient"
-                className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold rounded-sm border border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 transition-smooth">
+                className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold rounded-[3px] border-2 border-black bg-neutral-100 text-neutral-700 hover:bg-neutral-200 transition-smooth">
                 <Shuffle className="h-2.5 w-2.5" />
               </button>
             </div>
           </div>
-          <div className="flex gap-1 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-[5px] border-2 border-black dark:border-neutral-600">
+          <div className="flex gap-1 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-[4px] border-2 border-black dark:border-neutral-600 overflow-x-auto no-scrollbar">
             {sectionTab('demographics', 'Basic', User)}
             {sectionTab('airway', 'Airway', Stethoscope)}
             {sectionTab('physical', 'Physical', ClipboardList)}
@@ -451,7 +451,7 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
                     className={inputClass('neck_movement')} />
                   {errors.neck_movement && <p className="mt-0.5 text-[10px] text-danger-500">{errors.neck_movement}</p>}
                 </div>
-                <div className="border-t border-neutral-100 dark:border-neutral-700 pt-3">
+                <div className="border-t-2 border-black dark:border-neutral-600 pt-3">
                   <button type="button" onClick={() => setShowAdvanced(!showAdvanced)}
                     className="flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 transition-smooth">
                     <ChevronDown className={clsx('h-3 w-3 transition-transform', showAdvanced && 'rotate-180')} />
@@ -511,7 +511,7 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
         )}
 
         {Object.keys(errors).length > 0 && (
-          <div className="mt-4 p-2 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
+          <div className="mt-4 p-2 bg-danger-50 dark:bg-danger-900/20 border-2 border-black dark:border-neutral-600 rounded-[4px]">
             <p className="text-[10px] text-danger-600 dark:text-danger-400 flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
               Fix errors above before submitting
@@ -524,10 +524,10 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
             type="submit"
             disabled={loading}
             className={clsx(
-              'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-black border-2 border-black transition-smooth shadow-[4px_4px_0_#111]',
+              'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[4px] text-sm font-bold text-black border-2 border-black transition-smooth shadow-[4px_4px_0_#111111]',
               loading
                 ? 'bg-neutral-200 cursor-not-allowed'
-                : 'bg-brand-500 hover:bg-brand-400 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#111] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none'
+                : 'bg-brand-500 hover:bg-brand-400 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#111111] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none'
             )}
           >
             {loading && (

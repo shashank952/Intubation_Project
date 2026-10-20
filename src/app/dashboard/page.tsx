@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, Sun, Moon, User, Edit3, Plus, Activity, Loader2 } from 'lucide-react';
+import { LogOut, User, Edit3, Plus, Activity, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import Sidebar from '@/components/Sidebar';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 import RiskPredictionCard from '@/components/RiskPredictionCard';
 import AiClinicalAssessment from '@/components/AiClinicalAssessment';
 import PatientForm from '@/components/PatientForm';
@@ -13,46 +14,62 @@ import StatsCard from '@/components/StatsCard';
 import MiniHistory from '@/components/MiniHistory';
 
 import {
-  getPredictions, runPrediction, createPatient, deletePrediction,
+  getPredictions, deletePrediction,
   getPredictionReport, logout, getToken, getUser, checkLlmStatus,
 } from '@/lib/api';
-import type { PredictionInput, PredictionResponse, PredictionHistory as PredictionHistoryType, LLMReport } from '@/types';
+import type { PredictionInput, PredictionHistory as PredictionHistoryType, LLMReport } from '@/types';
+import { DEMO_USER, DEMO_HISTORY, DEMO_RESULT } from '@/lib/demoData';
+import { isLocalHost, LOCAL_DEMO_USER } from '@/lib/localDemo';
+import { usePrediction } from '@/lib/predictionStore';
+
+function isDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (new URLSearchParams(window.location.search).get('demo') === '1') return true;
+  return isLocalHost();
+}
 
 export default function DashboardPage() {
   const router = useRouter();
   const formRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<{ email: string; role: string } | null>(null);
-  const [predicting, setPredicting] = useState(false);
-  const [predictionResult, setPredictionResult] = useState<PredictionResponse | null>(null);
   const [predictions, setPredictions] = useState<PredictionHistoryType[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const [error, setError] = useState('');
   const [selectedPrediction, setSelectedPrediction] = useState<PredictionHistoryType | null>(null);
   const [selectedReport, setSelectedReport] = useState<LLMReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [llmStatus, setLlmStatus] = useState<'checking' | 'connected' | 'offline' | null>(null);
-  const [predictingSlow, setPredictingSlow] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'easy' | 'moderate' | 'difficult'>('all');
   const [showForm, setShowForm] = useState(true);
-  const [lastSubmittedPatient, setLastSubmittedPatient] = useState<PredictionInput | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
+  const [demoError, setDemoError] = useState('');
 
-  const toggleTheme = useCallback(() => {
-    const next = !darkMode;
-    setDarkMode(next);
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-  }, [darkMode]);
+  const {
+    status,
+    lastSubmittedPatient,
+    predictionResult,
+    error,
+    elapsedSeconds,
+    startAssessment,
+    clearAssessment,
+    dismissError,
+  } = usePrediction();
+  const predicting = status === 'running';
+  const predictingSlow = status === 'running' && elapsedSeconds > 5;
 
   useEffect(() => {
+    if (isDemoMode()) {
+      setDemoMode(true);
+      const demoUser = isLocalHost() ? LOCAL_DEMO_USER : DEMO_USER;
+      localStorage.setItem('user', JSON.stringify(demoUser));
+      setUser(demoUser);
+      setPredictions(DEMO_HISTORY);
+      setLoadingHistory(false);
+      setLlmStatus('connected');
+      return;
+    }
     if (!getToken()) { router.replace('/login'); return; }
     const u = getUser();
     if (u) setUser(u);
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      setDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
     if (window.location.hash === '#assess-form') {
       setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     }
@@ -65,7 +82,16 @@ export default function DashboardPage() {
     finally { setLoadingHistory(false); }
   }, []);
 
-  useEffect(() => { if (getToken()) fetchPredictions(); }, [fetchPredictions]);
+  useEffect(() => {
+    if (isDemoMode()) return;
+    if (getToken()) fetchPredictions();
+  }, [fetchPredictions]);
+
+  useEffect(() => {
+    if (status === 'done' && !isDemoMode() && getToken()) {
+      fetchPredictions();
+    }
+  }, [status, fetchPredictions]);
 
   const handleSelectPrediction = useCallback(async (pred: PredictionHistoryType) => {
     setSelectedPrediction(pred);
@@ -82,79 +108,59 @@ export default function DashboardPage() {
 
   const handleLogout = () => { logout(); router.push('/login'); };
 
-  const handleSubmit = async (data: PredictionInput) => {
-    setPredicting(true);
-    setPredictingSlow(false);
-    setError('');
+  const handleSubmit = (data: PredictionInput) => {
+    if (demoMode) {
+      setDemoError('Demo mode — start the backend API to run real assessments.');
+      return;
+    }
+    setDemoError('');
+    dismissError();
     checkLlmStatus()
       .then((s) => setLlmStatus(s.connected ? 'connected' : 'offline'))
       .catch(() => setLlmStatus('offline'));
-    const controller = new AbortController();
-    const slowTimer = setTimeout(() => setPredictingSlow(true), 5000);
-    const failTimer = setTimeout(() => controller.abort(), 35000);
-    try {
-      await createPatient({
-        patient_id: data.patient_id, age: data.age, gender: data.gender, bmi: data.bmi,
-        mallampati: String(data.mallampati_score), tmd: data.tmd, neck_circumference: data.neck_circumference,
-      });
-      const result: PredictionResponse = await runPrediction(data, controller.signal);
-      setPredictionResult(result);
-      setLastSubmittedPatient(data);
-      handleClearSelection();
-      fetchPredictions();
-    } catch (err) {
-      if (controller.signal.aborted) {
-        setError('Time limit exceeded. There has been an error with the LLM response. Please wait for a while and try again.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Prediction failed. Please try again.');
-      }
-    } finally {
-      clearTimeout(slowTimer);
-      clearTimeout(failTimer);
-      setPredicting(false);
-      setPredictingSlow(false);
-    }
+    startAssessment(data);
+    handleClearSelection();
   };
 
   const handleNewAssessment = useCallback(() => {
-    setPredictionResult(null);
+    clearAssessment();
     setSelectedPrediction(null);
     setSelectedReport(null);
-    setLastSubmittedPatient(null);
     setShowForm(true);
-  }, []);
+    setDemoError('');
+  }, [clearAssessment]);
 
   function FormStatusBar({ patient, onEdit, onNew }: { patient: PredictionInput; onEdit: () => void; onNew: () => void }) {
     return (
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-card animate-fade-in">
-        <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+      <div className="rounded-[4px] border-2 border-black bg-white shadow-card animate-fade-in dark:border-neutral-600 dark:bg-neutral-900">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-xl bg-black flex items-center justify-center shadow-soft">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[4px] bg-black shadow-soft">
               <User className="h-5 w-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-50">{patient.patient_id}</span>
-                <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-sm">{patient.gender}</span>
+                <span className="rounded-[2px] border-2 border-black bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-700 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200">{patient.gender}</span>
               </div>
-              <div className="flex items-center gap-3 mt-0.5 text-xs text-neutral-500 dark:text-neutral-300">
+              <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-neutral-500 dark:text-neutral-300">
                 <span>{patient.age}y</span>
-                <span className="w-1 h-1 rounded-sm bg-neutral-300 dark:bg-neutral-600" />
+                <span className="h-1 w-1 rounded-sm bg-neutral-300 dark:bg-neutral-600" />
                 <span>BMI {patient.bmi}</span>
-                <span className="w-1 h-1 rounded-sm bg-neutral-300 dark:bg-neutral-600" />
+                <span className="h-1 w-1 rounded-sm bg-neutral-300 dark:bg-neutral-600" />
                 <span>Mallampati {patient.mallampati_score}</span>
-                <span className="w-1 h-1 rounded-sm bg-neutral-300 dark:bg-neutral-600" />
+                <span className="h-1 w-1 rounded-sm bg-neutral-300 dark:bg-neutral-600" />
                 <span>TMD {patient.tmd}cm</span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-700 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/30 border border-brand-200 dark:border-brand-800 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-950/50 transition-smooth">
+              className="flex items-center gap-1.5 rounded-[4px] border-2 border-black bg-brand-500 px-3 py-1.5 text-xs font-bold text-black shadow-[2px_2px_0_#111111] transition-smooth hover:translate-x-[1px] hover:translate-y-[1px] hover:bg-brand-400 hover:shadow-none">
               <Plus className="h-3.5 w-3.5" /> New
             </button>
             <button onClick={onEdit}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-smooth">
+              className="flex items-center gap-1.5 rounded-[4px] border-2 border-black bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-[2px_2px_0_#111111] transition-smooth hover:translate-x-[1px] hover:translate-y-[1px] hover:bg-neutral-100 hover:shadow-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:shadow-[2px_2px_0_#3F3F46] dark:hover:bg-neutral-700">
               <Edit3 className="h-3.5 w-3.5" /> Edit
             </button>
           </div>
@@ -165,11 +171,13 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  const activePrediction = selectedPrediction || predictionResult?.prediction || null;
-  const activeRiskScore = selectedPrediction ? selectedPrediction.risk_score : predictionResult?.prediction.risk_score ?? null;
-  const activeConfidence = selectedPrediction ? selectedPrediction.confidence : predictionResult?.prediction.confidence ?? null;
-  const activeProbabilities = selectedPrediction ? selectedPrediction.probabilities : predictionResult?.prediction.probabilities ?? null;
-  const activePredictionLabel = selectedPrediction ? selectedPrediction.prediction : predictionResult?.prediction.prediction ?? null;
+  const effectiveResult = demoMode ? DEMO_RESULT : predictionResult;
+
+  const activePrediction = selectedPrediction || effectiveResult?.prediction || null;
+  const activeRiskScore = selectedPrediction ? selectedPrediction.risk_score : effectiveResult?.prediction.risk_score ?? null;
+  const activeConfidence = selectedPrediction ? selectedPrediction.confidence : effectiveResult?.prediction.confidence ?? null;
+  const activeProbabilities = selectedPrediction ? selectedPrediction.probabilities : effectiveResult?.prediction.probabilities ?? null;
+  const activePredictionLabel = selectedPrediction ? selectedPrediction.prediction : effectiveResult?.prediction.prediction ?? null;
 
   const easyCount = predictions.filter((p) => p.prediction.toLowerCase() === 'easy').length;
   const moderateCount = predictions.filter((p) => p.prediction.toLowerCase() === 'moderate').length;
@@ -177,40 +185,42 @@ export default function DashboardPage() {
 
   const reportSources = selectedPrediction
     ? { summary: selectedReport?.summary_source, recommendations: selectedReport?.recommendations_source }
-    : predictionResult?.report_sources;
+    : effectiveResult?.report_sources;
+
+  const displayError = status === 'error' ? error : demoError;
 
   return (
-    <div className="min-h-screen bg-[#F5F1DC] dark:bg-[#121212]">
+    <div className="min-h-screen bg-paper dark:bg-[#121212]">
       <Sidebar />
 
-      <div className="lg:pl-64 transition-all duration-300">
+      <div className="pl-0 transition-[padding-left] duration-300 ease-smooth lg:pl-[var(--sidebar-w,16rem)]">
         {/* Top Bar */}
-        <header className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 shadow-soft">
-          <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="lg:hidden w-10" />
-              <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-black flex items-center justify-center shadow-soft">
+        <header className="sticky top-0 z-20 border-b-2 border-black bg-white shadow-soft dark:border-neutral-600 dark:bg-neutral-900">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="w-10 lg:hidden" />
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-[4px] bg-black shadow-soft">
                   <Activity className="h-4 w-4 text-white" />
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold text-neutral-800 dark:text-neutral-50">
                     Airway Assessment
                   </h1>
-                  <p className="text-xs text-neutral-400 dark:text-neutral-400 capitalize">
+                  <p className="max-w-[52vw] truncate text-xs capitalize text-neutral-400 dark:text-neutral-400 sm:max-w-none">
                     {user.role} · {user.email}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-shrink-0 items-center gap-3">
               {llmStatus !== null && (
               <span
                 className={clsx(
-                  'hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold border-2 border-black rounded-[4px]',
+                  'hidden items-center gap-1.5 rounded-[3px] border-2 border-black px-2.5 py-1 text-[10px] font-bold sm:inline-flex',
                   llmStatus === 'connected'
-                    ? 'bg-success-50 text-success-700'
-                    : 'bg-danger-50 text-danger-700'
+                    ? 'bg-success-100 text-success-800'
+                    : 'bg-danger-100 text-danger-800'
                 )}
               >
                 <span
@@ -222,19 +232,13 @@ export default function DashboardPage() {
                 {llmStatus === 'connected' ? 'AI Connected' : 'AI Offline'}
               </span>
               )}
-              <button
-                onClick={toggleTheme}
-                className="h-9 w-9 rounded-lg bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 flex items-center justify-center text-neutral-500 dark:text-neutral-300 hover:text-neutral-700 dark:hover:text-neutral-50 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-smooth"
-                aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
+              <ThemeSwitcher />
               <button onClick={handleLogout}
-                className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm text-neutral-500 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-smooth border border-transparent hover:border-red-200 dark:hover:border-red-800">
+                className="hidden items-center gap-2 rounded-[4px] border-2 border-black bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 transition-smooth hover:bg-danger-50 hover:text-danger-700 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-danger-900/20 dark:hover:text-danger-400 sm:flex">
                 <LogOut className="h-4 w-4" />
                 <span>Sign Out</span>
               </button>
-              <div className="h-8 w-8 rounded-sm bg-black flex items-center justify-center text-white text-sm font-semibold shadow-soft">
+              <div className="flex h-8 w-8 items-center justify-center rounded-[3px] bg-black text-sm font-semibold text-white shadow-soft">
                 {user.email.charAt(0).toUpperCase()}
               </div>
             </div>
@@ -242,35 +246,41 @@ export default function DashboardPage() {
         </header>
 
         <main className="p-4 sm:p-6 lg:p-8">
-          <div className="max-w-[1200px] mx-auto space-y-6">
-          {/* Error banner */}
-          {error && (
-            <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-xl flex items-start gap-2.5 animate-fade-in">
-              <div className="h-4 w-4 rounded-sm bg-danger-500 text-black flex items-center justify-center flex-shrink-0 mt-0.5">
+          <div className="mx-auto max-w-[1400px] space-y-6">
+          {displayError && (
+            <div className="flex items-start gap-2.5 rounded-[4px] border-2 border-black bg-danger-50 p-3 animate-fade-in dark:border-neutral-600 dark:bg-danger-900/20">
+              <div className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm bg-danger-500 text-black">
                 <span className="text-[10px] font-bold">!</span>
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-danger-800 dark:text-danger-300">Assessment Error</p>
-                <p className="text-xs text-danger-600 dark:text-danger-400 mt-0.5">{error}</p>
+                <p className="mt-0.5 text-xs text-danger-600 dark:text-danger-400">{displayError}</p>
               </div>
-              <button onClick={() => setError('')} className="text-danger-400 hover:text-danger-600">&times;</button>
+              <button
+                onClick={() => { if (status === 'error') dismissError(); else setDemoError(''); }}
+                className="text-danger-400 hover:text-danger-600"
+              >
+                &times;
+              </button>
             </div>
           )}
 
-          {/* LLM slow warning */}
-          {predicting && predictingSlow && (
-            <div className="p-3 bg-warning-50 dark:bg-warning-900/20 border-2 border-black rounded-[6px] flex items-center gap-2.5 animate-fade-in">
-              <Loader2 className="h-4 w-4 animate-spin text-warning-600 flex-shrink-0" />
-              <p className="text-sm font-medium text-warning-800 dark:text-warning-300">
-                The LLM response is taking longer than usual. Please wait…
-              </p>
+          {status === 'running' && (
+            <div className="flex items-center gap-2.5 rounded-[4px] border-2 border-black bg-brand-100 p-3 animate-fade-in dark:border-neutral-600 dark:bg-brand-900/30">
+              <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-brand-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-neutral-800 dark:text-brand-300">
+                  Assessing {lastSubmittedPatient?.patient_id || 'patient'} in the background…
+                </p>
+                <p className="mt-0.5 text-xs text-neutral-500 dark:text-brand-400">
+                  {elapsedSeconds}s elapsed — you can browse other tabs and come back to see the result.
+                </p>
+              </div>
             </div>
           )}
 
-          {/* Row 1 — Patient Entry + Risk Score side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-            {/* LEFT — patient entry */}
-            <div className="space-y-4">
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+            <div className="space-y-4 animate-rise stagger-1 lg:col-span-7">
               {showForm ? (
                 <div ref={formRef} id="assess-form">
                   <PatientForm onSubmit={handleSubmit} loading={predicting} initialData={lastSubmittedPatient} />
@@ -278,87 +288,84 @@ export default function DashboardPage() {
               ) : lastSubmittedPatient ? (
                 <FormStatusBar patient={lastSubmittedPatient} onEdit={() => setShowForm(true)} onNew={handleNewAssessment} />
               ) : null}
+
+              <AiClinicalAssessment
+                summary={selectedReport ? selectedReport.summary : effectiveResult?.clinical_summary || ''}
+                recommendations={selectedReport ? selectedReport.recommendations : effectiveResult?.recommendations || ''}
+                loading={predicting || loadingReport}
+                prediction={activePredictionLabel || undefined}
+                slow={predictingSlow}
+                sources={reportSources}
+              />
             </div>
 
-            {/* RIGHT — risk score, stretches to fill column height */}
-            {activeRiskScore !== null ? (
-              <div className="flex flex-col gap-4 h-full">
-                {selectedPrediction && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-xl animate-fade-in">
-                    <span className="text-xs text-brand-700 dark:text-brand-300 font-medium">
-                      Viewing record for <strong>{selectedPrediction.patient_id}</strong>
-                    </span>
-                    <div className="ml-auto flex items-center gap-3">
-                      <button onClick={handleNewAssessment}
-                        className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-800 font-semibold underline">+ New</button>
-                      <button onClick={handleClearSelection}
-                        className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-800 font-semibold underline">Clear</button>
+            <div className="space-y-4 animate-rise stagger-2 lg:col-span-5">
+              {selectedPrediction && (
+                <div className="flex items-center gap-2 rounded-[4px] border-2 border-black bg-brand-100 px-3 py-2 animate-fade-in dark:border-neutral-600 dark:bg-brand-900/30">
+                  <span className="text-xs font-medium text-brand-700 dark:text-brand-300">
+                    Viewing record for <strong>{selectedPrediction.patient_id}</strong>
+                  </span>
+                  <div className="ml-auto flex items-center gap-3">
+                    <button onClick={handleNewAssessment}
+                      className="text-xs font-semibold text-brand-600 underline hover:text-brand-800 dark:text-brand-400">+ New</button>
+                    <button onClick={handleClearSelection}
+                      className="text-xs font-semibold text-brand-600 underline hover:text-brand-800 dark:text-brand-400">Clear</button>
+                  </div>
+                </div>
+              )}
+              {activeRiskScore !== null ? (
+                <RiskPredictionCard
+                  riskScore={activeRiskScore}
+                  prediction={activePredictionLabel || ''}
+                  confidence={activeConfidence || 0}
+                  probabilities={activeProbabilities || {}}
+                />
+              ) : (
+                <div className="flex items-center justify-center rounded-[4px] border-2 border-black bg-white py-10 shadow-card dark:border-neutral-600 dark:bg-neutral-900">
+                  <div className="text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[4px] border-2 border-dashed border-black bg-neutral-50 dark:border-neutral-500 dark:bg-neutral-800">
+                      <span className="text-2xl font-bold text-neutral-300 dark:text-neutral-500">?</span>
                     </div>
+                    <p className="text-sm font-medium text-neutral-400 dark:text-neutral-300">No risk score yet</p>
+                    <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-400">Submit the form to see prediction</p>
                   </div>
-                )}
-                <div className="flex-1 min-h-0">
-                  <RiskPredictionCard
-                    riskScore={activeRiskScore}
-                    prediction={activePredictionLabel || ''}
-                    confidence={activeConfidence || 0}
-                    probabilities={activeProbabilities || {}}
-                  />
                 </div>
-              </div>
-            ) : (
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-card p-8 flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="h-20 w-20 rounded-sm bg-neutral-50 dark:bg-neutral-800 border-2 border-dashed border-neutral-200 dark:border-neutral-600 flex items-center justify-center mx-auto mb-4">
-                    <span className="text-3xl font-bold text-neutral-300 dark:text-neutral-500">?</span>
-                  </div>
-                  <p className="text-sm text-neutral-400 dark:text-neutral-300 font-medium">No risk score yet</p>
-                  <p className="text-xs text-neutral-400 dark:text-neutral-400 mt-1">Submit the form to see prediction</p>
-                </div>
-              </div>
-            )}
+              )}
+
+              <MiniHistory
+                predictions={predictions}
+                selectedId={selectedPrediction?.id}
+                onSelect={handleSelectPrediction}
+              />
+            </div>
           </div>
 
-          {/* Row 2 — Recent Records (full width) */}
-          <MiniHistory
-            predictions={predictions}
-            selectedId={selectedPrediction?.id}
-            onSelect={handleSelectPrediction}
-          />
-
-          {/* Row 3 — Doctor's Recommendations (full width) */}
-          {activeRiskScore !== null && (
-            <AiClinicalAssessment
-              summary={selectedReport ? selectedReport.summary : predictionResult?.clinical_summary || ''}
-              recommendations={selectedReport ? selectedReport.recommendations : predictionResult?.recommendations || ''}
-              loading={predicting || loadingReport}
-              prediction={activePredictionLabel || undefined}
-              slow={predictingSlow}
-              sources={reportSources}
+          {/* Overview */}
+          <div className="animate-rise">
+            <StatsCard
+              easy={easyCount}
+              moderate={moderateCount}
+              difficult={difficultCount}
+              total={predictions.length}
             />
-          )}
+          </div>
 
-          {/* Row 4 — Overview (full width) */}
-          <StatsCard
-            easy={easyCount}
-            moderate={moderateCount}
-            difficult={difficultCount}
-            total={predictions.length}
-          />
-
-          {/* Row 5 — Patient History (full width) */}
-          <PatientHistory
-            predictions={predictions}
-            loading={loadingHistory}
-            selectedId={selectedPrediction?.id}
-            onSelect={handleSelectPrediction}
-            filter={historyFilter}
-            onFilterChange={setHistoryFilter}
-            onDelete={async (id) => {
-              try { await deletePrediction(id); } catch { /* 404 ok */ }
-              setPredictions((prev) => prev.filter((p) => p.id !== id));
-              if (selectedPrediction?.id === id) handleClearSelection();
-            }}
-          />
+          {/* Full width — patient history */}
+          <div className="animate-rise">
+            <PatientHistory
+              predictions={predictions}
+              loading={loadingHistory}
+              selectedId={selectedPrediction?.id}
+              onSelect={handleSelectPrediction}
+              filter={historyFilter}
+              onFilterChange={setHistoryFilter}
+              onDelete={async (id) => {
+                try { await deletePrediction(id); } catch { /* 404 ok */ }
+                setPredictions((prev) => prev.filter((p) => p.id !== id));
+                if (selectedPrediction?.id === id) handleClearSelection();
+              }}
+            />
+          </div>
           </div>
         </main>
       </div>

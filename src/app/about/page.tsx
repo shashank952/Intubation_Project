@@ -85,17 +85,18 @@ export default function AboutPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#F5F1DC] dark:bg-[#121212]">
+    <div className="min-h-screen bg-paper dark:bg-[#121212]">
       <Sidebar />
 
-      <div className="lg:pl-64 transition-all duration-300">
+      <div className="pl-0 transition-[padding-left] duration-300 ease-smooth lg:pl-[var(--sidebar-w,16rem)]">
         {/* Top bar */}
-        <header className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 shadow-sm">
+        <header className="bg-white dark:bg-neutral-900 border-b-2 border-black dark:border-neutral-600 shadow-soft">
           <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <div className="lg:hidden w-10" />
               <button
                 onClick={() => router.push('/dashboard')}
-                className="h-8 w-8 rounded-lg bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-600 flex items-center justify-center text-gray-500 dark:text-neutral-300 hover:text-gray-700 dark:hover:text-neutral-50 hover:bg-gray-100 dark:hover:bg-neutral-700 transition-smooth"
+                className="h-8 w-8 rounded-[4px] bg-white dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 flex items-center justify-center text-neutral-600 dark:text-neutral-300 shadow-[2px_2px_0_#111111] dark:shadow-[2px_2px_0_#3F3F46] hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-smooth"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
@@ -106,7 +107,7 @@ export default function AboutPage() {
                 </p>
               </div>
             </div>
-            <div className="h-8 w-8 rounded-sm bg-black flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+            <div className="h-8 w-8 rounded-[3px] bg-black flex items-center justify-center text-white text-sm font-semibold shadow-soft">
               {user.email.charAt(0).toUpperCase()}
             </div>
           </div>
@@ -116,7 +117,7 @@ export default function AboutPage() {
           {/* ML Models Section */}
           <section>
             <div className="flex items-center gap-3 mb-5">
-              <div className="h-8 w-8 rounded-lg bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-[4px] border-2 border-black bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center">
                 <Brain className="h-4 w-4 text-brand-600 dark:text-brand-400" />
               </div>
               <div>
@@ -133,13 +134,13 @@ export default function AboutPage() {
               {mlModels.map((model) => (
                 <div
                   key={model.name}
-                  className="bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-600 p-5 card-gradient hover:shadow-md transition-smooth"
+                  className="bg-white dark:bg-neutral-900 rounded-[4px] shadow-card border-2 border-black dark:border-neutral-600 p-5 card-gradient hover:shadow-lg transition-smooth"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-bold text-gray-800 dark:text-neutral-50">
                       {model.name}
                     </h3>
-                    <span className="text-[10px] font-medium text-gray-400 dark:text-neutral-300 uppercase tracking-wider bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 rounded-sm">
+                    <span className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 uppercase tracking-wider bg-gray-100 dark:bg-neutral-800 border-2 border-black dark:border-neutral-600 px-2 py-0.5 rounded-[3px]">
                       {model.type.split(' ')[0]}
                     </span>
                   </div>
@@ -166,7 +167,7 @@ export default function AboutPage() {
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-neutral-700 text-[10px] text-gray-400 dark:text-neutral-400 font-mono">
+                  <div className="mt-3 pt-3 border-t-2 border-black dark:border-neutral-600 text-[10px] text-gray-400 dark:text-neutral-400 font-mono">
                     {model.file}
                   </div>
                 </div>
@@ -177,7 +178,7 @@ export default function AboutPage() {
           {/* LLM Section */}
           <section>
             <div className="flex items-center gap-3 mb-5">
-              <div className="h-8 w-8 rounded-lg bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-[4px] border-2 border-black bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center">
                 <Sparkles className="h-4 w-4 text-brand-600 dark:text-brand-400" />
               </div>
               <div>
@@ -190,7 +191,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-600 p-5 card-gradient">
+            <div className="bg-white dark:bg-neutral-900 rounded-[4px] shadow-card border-2 border-black dark:border-neutral-600 p-5 card-gradient">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <p className="text-xs text-gray-400 dark:text-neutral-300 mb-1">Provider</p>
@@ -217,7 +218,7 @@ export default function AboutPage() {
                   </p>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-neutral-700">
+              <div className="mt-4 pt-4 border-t-2 border-black dark:border-neutral-600">
                 <p className="text-xs text-gray-400 dark:text-neutral-300 mb-1">Purpose</p>
                 <p className="text-sm text-gray-700 dark:text-neutral-200">{llmInfo.purpose}</p>
               </div>
@@ -227,7 +228,7 @@ export default function AboutPage() {
           {/* Architecture Section */}
           <section>
             <div className="flex items-center gap-3 mb-5">
-              <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-[4px] bg-gray-100 border-2 border-black flex items-center justify-center">
                 <Layers className="h-4 w-4 text-gray-600" />
               </div>
               <div>
@@ -240,7 +241,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-200 dark:border-neutral-600 divide-y divide-gray-100 dark:divide-neutral-700">
+            <div className="bg-white dark:bg-neutral-900 rounded-[4px] shadow-card border-2 border-black dark:border-neutral-600 divide-y-2 divide-black/15 dark:divide-neutral-700">
               {architecture.map((layer, i) => {
                 const Icon = layer.icon;
                 return (
@@ -250,7 +251,7 @@ export default function AboutPage() {
                   >
                     <div
                       className={clsx(
-                        'h-8 w-8 rounded-lg flex items-center justify-center',
+                        'h-8 w-8 rounded-[4px] border-2 border-black flex items-center justify-center',
                         i === 0
                            ? 'bg-brand-50 text-brand-600 dark:bg-brand-950/30 dark:text-brand-400'
                            : i === 1

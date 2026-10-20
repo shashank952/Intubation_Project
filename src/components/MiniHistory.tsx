@@ -23,8 +23,8 @@ export default function MiniHistory({ predictions, selectedId, onSelect }: MiniH
   const recent = predictions.slice(0, 5);
 
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-card overflow-hidden">
-      <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-700 flex items-center justify-between">
+    <div className="bg-white dark:bg-neutral-900 rounded-[4px] border-2 border-black dark:border-neutral-600 shadow-card overflow-hidden">
+      <div className="px-4 py-3 border-b-2 border-black dark:border-neutral-600 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-brand-500 dark:text-brand-400" />
           <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -52,7 +52,7 @@ export default function MiniHistory({ predictions, selectedId, onSelect }: MiniH
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+        <div className="divide-y-2 divide-black/15 dark:divide-neutral-700">
           {recent.map((pred) => {
             const bc = badgeClasses(pred.prediction);
             const isSelected = selectedId === pred.id;
@@ -66,8 +66,8 @@ export default function MiniHistory({ predictions, selectedId, onSelect }: MiniH
                 className={clsx(
                   'w-full flex items-center justify-between px-4 py-2.5 text-left transition-smooth',
                   isSelected
-                    ? 'bg-brand-50 dark:bg-brand-950/30'
-                    : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+                    ? 'bg-brand-100 dark:bg-brand-950/40'
+                    : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 )}
               >
                 <div className="flex items-center gap-3 min-w-0">

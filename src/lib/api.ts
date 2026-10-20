@@ -7,6 +7,10 @@ import type {
   LLMReport,
   LlmStatus,
 } from '@/types';
+import { ensureLocalSession, isLocalHost } from '@/lib/localDemo';
+import { DEMO_HISTORY, DEMO_REPORT } from '@/lib/demoData';
+
+ensureLocalSession();
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
@@ -179,6 +183,7 @@ export async function checkLlmStatus(): Promise<LlmStatus> {
 export async function getPredictions(
   patientId?: string
 ): Promise<PredictionHistory[]> {
+  if (isLocalHost()) return DEMO_HISTORY;
   const query = patientId ? `?patient_id=${encodeURIComponent(patientId)}` : '';
   return apiFetch<PredictionHistory[]>(`/api/predictions${query}`);
 }
@@ -186,6 +191,7 @@ export async function getPredictions(
 export async function getPredictionReport(
   predictionId: string
 ): Promise<LLMReport> {
+  if (isLocalHost()) return DEMO_REPORT;
   return apiFetch<LLMReport>(
     `/api/predictions/${encodeURIComponent(predictionId)}/report`
   );
