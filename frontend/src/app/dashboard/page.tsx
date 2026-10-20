@@ -18,15 +18,7 @@ import {
   getPredictionReport, logout, getToken, getUser, checkLlmStatus,
 } from '@/lib/api';
 import type { PredictionInput, PredictionHistory as PredictionHistoryType, LLMReport } from '@/types';
-import { DEMO_USER, DEMO_HISTORY, DEMO_RESULT } from '@/lib/demoData';
-import { isLocalHost, LOCAL_DEMO_USER } from '@/lib/localDemo';
 import { usePrediction } from '@/lib/predictionStore';
-
-function isDemoMode(): boolean {
-  if (typeof window === 'undefined') return false;
-  if (new URLSearchParams(window.location.search).get('demo') === '1') return true;
-  return isLocalHost();
-}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -40,8 +32,6 @@ export default function DashboardPage() {
   const [llmStatus, setLlmStatus] = useState<'checking' | 'connected' | 'offline' | null>(null);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'easy' | 'moderate' | 'difficult'>('all');
   const [showForm, setShowForm] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
-  const [demoError, setDemoError] = useState('');
 
   const {
     status,
@@ -57,16 +47,6 @@ export default function DashboardPage() {
   const predictingSlow = status === 'running' && elapsedSeconds > 5;
 
   useEffect(() => {
-    if (isDemoMode()) {
-      setDemoMode(true);
-      const demoUser = isLocalHost() ? LOCAL_DEMO_USER : DEMO_USER;
-      localStorage.setItem('user', JSON.stringify(demoUser));
-      setUser(demoUser);
-      setPredictions(DEMO_HISTORY);
-      setLoadingHistory(false);
-      setLlmStatus('connected');
-      return;
-    }
     if (!getToken()) { router.replace('/login'); return; }
     const u = getUser();
     if (u) setUser(u);
@@ -83,12 +63,11 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (isDemoMode()) return;
     if (getToken()) fetchPredictions();
   }, [fetchPredictions]);
 
   useEffect(() => {
-    if (status === 'done' && !isDemoMode() && getToken()) {
+    if (status === 'done' && getToken()) {
       fetchPredictions();
     }
   }, [status, fetchPredictions]);
@@ -109,11 +88,6 @@ export default function DashboardPage() {
   const handleLogout = () => { logout(); router.push('/login'); };
 
   const handleSubmit = (data: PredictionInput) => {
-    if (demoMode) {
-      setDemoError('Demo mode — start the backend API to run real assessments.');
-      return;
-    }
-    setDemoError('');
     dismissError();
     checkLlmStatus()
       .then((s) => setLlmStatus(s.connected ? 'connected' : 'offline'))
@@ -127,7 +101,6 @@ export default function DashboardPage() {
     setSelectedPrediction(null);
     setSelectedReport(null);
     setShowForm(true);
-    setDemoError('');
   }, [clearAssessment]);
 
   function FormStatusBar({ patient, onEdit, onNew }: { patient: PredictionInput; onEdit: () => void; onNew: () => void }) {
@@ -171,7 +144,7 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  const effectiveResult = demoMode ? DEMO_RESULT : predictionResult;
+  const effectiveResult = predictionResult;
 
   const activePrediction = selectedPrediction || effectiveResult?.prediction || null;
   const activeRiskScore = selectedPrediction ? selectedPrediction.risk_score : effectiveResult?.prediction.risk_score ?? null;
@@ -187,7 +160,7 @@ export default function DashboardPage() {
     ? { summary: selectedReport?.summary_source, recommendations: selectedReport?.recommendations_source }
     : effectiveResult?.report_sources;
 
-  const displayError = status === 'error' ? error : demoError;
+  const displayError = status === 'error' ? error : null;
 
   return (
     <div className="min-h-screen bg-paper dark:bg-[#121212]">
@@ -257,7 +230,7 @@ export default function DashboardPage() {
                 <p className="mt-0.5 text-xs text-danger-600 dark:text-danger-400">{displayError}</p>
               </div>
               <button
-                onClick={() => { if (status === 'error') dismissError(); else setDemoError(''); }}
+                onClick={dismissError}
                 className="text-danger-400 hover:text-danger-600"
               >
                 &times;

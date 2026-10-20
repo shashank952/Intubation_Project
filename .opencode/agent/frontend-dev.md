@@ -18,7 +18,6 @@ You are a frontend/API developer for a medical multimodal airway prediction syst
 - Pages: login, signup, dashboard, patients/new, history, reports, settings, about
 - Auth: JWT bearer token in localStorage via `frontend/src/lib/api.ts`
 - Theming: neo-brutalist design system (tailwind.config.js + globals.css, dark mode via ThemeSwitcher)
-- `frontend/src/lib/localDemo.ts` serves demo data ONLY on localhost when no API is reachable — never in prod
 
 ## API endpoints (FastAPI, backend/deploy/)
 

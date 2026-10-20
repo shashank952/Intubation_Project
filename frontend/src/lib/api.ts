@@ -7,10 +7,6 @@ import type {
   LLMReport,
   LlmStatus,
 } from '@/types';
-import { ensureLocalSession, isLocalHost } from '@/lib/localDemo';
-import { DEMO_HISTORY, DEMO_REPORT } from '@/lib/demoData';
-
-ensureLocalSession();
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
@@ -199,7 +195,7 @@ export async function register(
 export async function logout(): Promise<void> {
   const token = getToken();
   clearToken();
-  if (!token || isLocalHost()) return;
+  if (!token) return;
   await fetch(`${BASE_URL}/api/auth/logout`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
@@ -215,14 +211,6 @@ export interface HeartbeatResponse {
 }
 
 export async function heartbeat(): Promise<HeartbeatResponse> {
-  if (isLocalHost()) {
-    return {
-      server_time: new Date().toISOString(),
-      expires_at: new Date(Date.now() + getIdleTimeoutSeconds() * 1000).toISOString(),
-      idle_timeout_seconds: getIdleTimeoutSeconds(),
-      warning_seconds: getWarningSeconds(),
-    };
-  }
   return apiFetch<HeartbeatResponse>('/api/auth/heartbeat', { method: 'POST' });
 }
 
@@ -261,7 +249,6 @@ export async function checkLlmStatus(): Promise<LlmStatus> {
 export async function getPredictions(
   patientId?: string
 ): Promise<PredictionHistory[]> {
-  if (isLocalHost()) return DEMO_HISTORY;
   const query = patientId ? `?patient_id=${encodeURIComponent(patientId)}` : '';
   return apiFetch<PredictionHistory[]>(`/api/predictions${query}`);
 }
@@ -269,7 +256,6 @@ export async function getPredictions(
 export async function getPredictionReport(
   predictionId: string
 ): Promise<LLMReport> {
-  if (isLocalHost()) return DEMO_REPORT;
   return apiFetch<LLMReport>(
     `/api/predictions/${encodeURIComponent(predictionId)}/report`
   );

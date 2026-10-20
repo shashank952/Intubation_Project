@@ -3,6 +3,18 @@
 Notable changes to the Intubation_Project. Format follows
 [Keep a Changelog](https://keepachangelog.com/); entries grouped by date.
 
+## 2026-10-20 — Removed local demo mode
+
+- Deleted `frontend/src/lib/localDemo.ts` and `frontend/src/lib/demoData.ts`.
+  The app no longer auto-creates a fake session or serves demo
+  history/reports on localhost, private-IP hosts, or via `?demo=1`.
+  Every environment now requires a real login against the real backend.
+- Removed the demo branches from the dashboard (fake user, demo history,
+  demo result, "demo mode" banner/error), login page, root redirect,
+  `SessionProvider`, and `api.ts` (`ensureLocalSession`, demo return values).
+- Idle-logout enforcement no longer needs a demo exemption — it applies
+  everywhere.
+
 ## 2026-10-20 — Session idle logout (automatic sign-out)
 
 ### Backend

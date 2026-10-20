@@ -7,7 +7,6 @@ import { Stethoscope, Eye, EyeOff, AlertCircle, LogIn, Clock } from 'lucide-reac
 import clsx from 'clsx';
 import { login, getToken, clearToken } from '@/lib/api';
 import { BASE_URL } from '@/lib/api';
-import { isLocalHost } from '@/lib/localDemo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,10 +24,6 @@ export default function LoginPage() {
 
   // Redirect only if token is valid; clear stale tokens
   useEffect(() => {
-    if (isLocalHost()) {
-      router.replace('/dashboard');
-      return;
-    }
     const token = getToken();
     if (!token) return;
     (async () => {
