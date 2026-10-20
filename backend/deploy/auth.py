@@ -13,6 +13,10 @@ bearer_scheme = HTTPBearer(auto_error=False)
 ROLE_HIERARCHY = {"admin": 3, "doctor": 2, "viewer": 1}
 
 
+def is_admin(user: dict) -> bool:
+    return user.get("role") == "admin"
+
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 

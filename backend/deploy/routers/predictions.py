@@ -2,7 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from pathlib import Path
 from typing import List
 from datetime import datetime, timezone
+from collections import defaultdict
 import asyncio
+import time
 import torch
 import pandas as pd
 import numpy as np
@@ -10,8 +12,8 @@ import joblib
 from bson import ObjectId
 from bson.errors import InvalidId
 
-from ..database import get_db
-from ..auth import get_current_user, require_role
+from ..database import get_db, audit_log
+from ..auth import get_current_user, require_role, is_admin
 from ..schemas import PredictionInput, PredictionOut, LLMReportOut
 from ..model_loader import predict_tabular
 from ..llm_assistant import generate_clinical_summary, generate_recommendations
@@ -20,6 +22,25 @@ from backend.data.preprocessing import CATEGORICAL_COLS, NUMERICAL_COLS
 router = APIRouter(prefix="/api/predictions", tags=["predictions"])
 
 _scaler = None
+
+_PRED_WINDOW_SECONDS = 60
+_MAX_PREDS_PER_WINDOW = 10
+_pred_timestamps: dict = defaultdict(list)
+
+
+def _owner_query(user: dict) -> dict:
+    return {} if is_admin(user) else {"owner_id": user["sub"]}
+
+
+def _enforce_prediction_rate_limit(user: dict) -> None:
+    if is_admin(user):
+        return
+    now = time.time()
+    key = user["sub"]
+    _pred_timestamps[key] = [t for t in _pred_timestamps[key] if now - t < _PRED_WINDOW_SECONDS]
+    if len(_pred_timestamps[key]) >= _MAX_PREDS_PER_WINDOW:
+        raise HTTPException(status_code=429, detail="Too many assessments. Try again shortly.")
+    _pred_timestamps[key].append(now)
 
 
 def _get_scaler():
@@ -109,8 +130,9 @@ def _prepare_input(data: PredictionInput):
 async def run_prediction(
     data: PredictionInput, user: dict = Depends(require_role("doctor"))
 ):
+    _enforce_prediction_rate_limit(user)
     db = get_db()
-    patient = await db.patients.find_one({"patient_id": data.patient_id})
+    patient = await db.patients.find_one({"patient_id": data.patient_id, **_owner_query(user)})
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
@@ -123,6 +145,7 @@ async def run_prediction(
 
     pred_doc = {
         "patient_id": data.patient_id,
+        "owner_id": user["sub"],
         "prediction": result["prediction"],
         "confidence": result["confidence"],
         "probabilities": result["probabilities"],
@@ -145,6 +168,7 @@ async def run_prediction(
 
     llm_doc = {
         "prediction_id": pred_doc["id"],
+        "owner_id": user["sub"],
         "summary": summary or "",
         "recommendations": recommendations or "",
         "summary_source": summary_source,
@@ -153,6 +177,8 @@ async def run_prediction(
     }
     await db.llm_reports.insert_one(llm_doc)
     llm_doc.pop("_id", None)
+
+    await audit_log(db, user["sub"], "predict", "prediction", data.patient_id)
 
     return {
         "prediction": pred_doc,
@@ -171,7 +197,7 @@ async def list_predictions(
     user: dict = Depends(get_current_user),
 ):
     db = get_db()
-    query = {}
+    query = _owner_query(user)
     if patient_id:
         query["patient_id"] = patient_id
     cursor = db.predictions.find(query).skip(skip).limit(limit).sort("created_at", -1)
@@ -187,6 +213,8 @@ async def get_llm_report(prediction_id: str, user: dict = Depends(get_current_us
     db = get_db()
     doc = await db.llm_reports.find_one({"prediction_id": prediction_id}, {"_id": 0})
     if not doc:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if not is_admin(user) and doc.get("owner_id") and doc["owner_id"] != user["sub"]:
         raise HTTPException(status_code=404, detail="Report not found")
     return LLMReportOut(**doc)
 
@@ -204,6 +232,7 @@ async def delete_prediction(
     if pred.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Prediction not found")
     await db.llm_reports.delete_one({"prediction_id": prediction_id})
+    await audit_log(db, user["sub"], "delete", "prediction", prediction_id)
     return None
 
 
@@ -213,7 +242,7 @@ async def export_csv(user: dict = Depends(require_role("doctor"))):
     import io, csv
 
     db = get_db()
-    cursor = db.predictions.find({}, {"_id": 0}).sort("created_at", -1)
+    cursor = db.predictions.find(_owner_query(user), {"_id": 0}).sort("created_at", -1)
     rows = await cursor.to_list(length=10000)
 
     output = io.StringIO()

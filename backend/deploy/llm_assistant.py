@@ -37,6 +37,8 @@ def _is_feasible(text: str) -> bool:
 
 
 def _call_llm(prompt: str, system: str = "") -> Optional[str]:
+    if not settings.llm_external_enabled:
+        return None
     client = _get_client()
     messages = []
     if system:
