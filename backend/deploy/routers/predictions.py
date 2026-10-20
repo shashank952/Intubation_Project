@@ -137,7 +137,9 @@ async def run_prediction(
         raise HTTPException(status_code=404, detail="Patient not found")
 
     numerical, categorical = _prepare_input(data)
-    result = predict_tabular(numerical, categorical)
+    # torch inference is CPU-bound — run off the event loop so concurrent
+    # requests don't stall behind one prediction
+    result = await asyncio.to_thread(predict_tabular, numerical, categorical)
 
     prob_score = result["probabilities"]
     weighted = (0 * prob_score.get("Easy", 0) + 50 * prob_score.get("Moderate", 0) + 100 * prob_score.get("Difficult", 0))
@@ -150,6 +152,7 @@ async def run_prediction(
         "confidence": result["confidence"],
         "probabilities": result["probabilities"],
         "risk_score": risk_score,
+        "model_version": result.get("model_version"),
         "created_at": datetime.now(timezone.utc),
     }
     insert_result = await db.predictions.insert_one(pred_doc)
@@ -191,11 +194,16 @@ async def run_prediction(
     }
 
 
+_MAX_LIST_LIMIT = 200
+
+
 @router.get("", response_model=List[PredictionOut])
 async def list_predictions(
     patient_id: str = None, skip: int = 0, limit: int = 50,
     user: dict = Depends(get_current_user),
 ):
+    skip = max(0, skip)
+    limit = max(0, min(limit, _MAX_LIST_LIMIT))
     db = get_db()
     query = _owner_query(user)
     if patient_id:

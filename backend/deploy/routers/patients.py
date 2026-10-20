@@ -33,10 +33,15 @@ async def create_patient(data: PatientCreate, user: dict = Depends(require_role(
     return PatientOut(**doc)
 
 
+_MAX_LIST_LIMIT = 200
+
+
 @router.get("", response_model=List[PatientOut])
 async def list_patients(
     skip: int = 0, limit: int = 50, user: dict = Depends(get_current_user)
 ):
+    skip = max(0, skip)
+    limit = max(0, min(limit, _MAX_LIST_LIMIT))
     db = get_db()
     query = _owner_query(user)
     cursor = db.patients.find(query, {"_id": 0}).skip(skip).limit(limit).sort("created_at", -1)

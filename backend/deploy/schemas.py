@@ -39,8 +39,13 @@ class TokenOut(BaseModel):
     user: UserOut
 
 
+# patient_id is used in URL paths (/api/patients/{patient_id}) and as a DB key —
+# restrict to a conservative identifier charset.
+_PATIENT_ID_PATTERN = r"^[A-Za-z0-9._-]{1,64}$"
+
+
 class PatientCreate(BaseModel):
-    patient_id: str = Field(min_length=1, max_length=64)
+    patient_id: str = Field(min_length=1, max_length=64, pattern=_PATIENT_ID_PATTERN)
     age: int = Field(ge=0, le=120)
     gender: str = Field(min_length=1, max_length=32)
     bmi: float = Field(ge=10, le=60)
@@ -78,7 +83,7 @@ class PatientOut(PatientCreate):
 
 
 class PredictionInput(BaseModel):
-    patient_id: str = Field(min_length=1, max_length=64)
+    patient_id: str = Field(min_length=1, max_length=64, pattern=_PATIENT_ID_PATTERN)
     age: float = Field(ge=0, le=120)
     gender: str = Field(max_length=32)
     bmi: float = Field(ge=10, le=60)
@@ -131,6 +136,7 @@ class PredictionOut(BaseModel):
     confidence: float
     probabilities: dict
     risk_score: float
+    model_version: Optional[str] = None
     created_at: datetime
 
 
