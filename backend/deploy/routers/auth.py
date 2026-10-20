@@ -1,12 +1,23 @@
 import time
 from collections import defaultdict
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from ..auth import create_access_token, get_current_user, hash_password, verify_password
+from ..auth import (
+    bearer_scheme,
+    create_access_token,
+    create_session,
+    decode_token,
+    get_current_user,
+    hash_password,
+    revoke_session,
+    token_expiry,
+    verify_password,
+)
 from ..database import get_db
 from ..config import settings
-from ..schemas import TokenOut, UserCreate, UserOut
+from ..schemas import HeartbeatOut, TokenOut, UserCreate, UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -69,8 +80,45 @@ async def login(user: UserCreate, request: Request):
         _failed_attempts[email].append(time.time())
         raise HTTPException(status_code=401, detail="Invalid credentials")
     _failed_attempts.pop(email, None)
-    token = create_access_token({"sub": email, "role": doc["role"]})
-    return TokenOut(access_token=token, user=UserOut(email=email, role=doc["role"]))
+    sid = await create_session(email)
+    token = create_access_token({"sub": email, "role": doc["role"], "sid": sid})
+    now = datetime.now(timezone.utc)
+    return TokenOut(
+        access_token=token,
+        user=UserOut(email=email, role=doc["role"]),
+        expires_at=token_expiry(now),
+        idle_timeout_seconds=settings.session_idle_timeout_minutes * 60,
+        warning_seconds=settings.session_warning_seconds,
+    )
+
+
+@router.post("/logout", status_code=204)
+async def logout(credentials=Depends(bearer_scheme)):
+    if credentials is None:
+        return None
+    try:
+        payload = decode_token(credentials.credentials)
+    except HTTPException:
+        return None
+    sid = payload.get("sid")
+    if sid:
+        await revoke_session(sid)
+    return None
+
+
+@router.post("/heartbeat", response_model=HeartbeatOut)
+async def heartbeat(current_user: dict = Depends(get_current_user)):
+    now = datetime.now(timezone.utc)
+    await get_db().sessions.update_one(
+        {"sid": current_user["sid"], "revoked_at": None},
+        {"$set": {"last_activity_at": now}},
+    )
+    return HeartbeatOut(
+        server_time=now,
+        expires_at=token_expiry(now),
+        idle_timeout_seconds=settings.session_idle_timeout_minutes * 60,
+        warning_seconds=settings.session_warning_seconds,
+    )
 
 
 @router.get("/me", response_model=UserOut)

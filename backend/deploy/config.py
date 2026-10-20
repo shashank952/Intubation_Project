@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 480
 
+    # Server-enforced sliding session expiry. A session dies after this many
+    # idle minutes (no requests) or the absolute cap, whichever comes first.
+    session_idle_timeout_minutes: int = 30
+    session_absolute_timeout_hours: int = 12
+    session_warning_seconds: int = 120
+    session_touch_interval_seconds: int = 60
+
     # Comma-separated allowed browser origins. Never use "*" in production.
     cors_origins: str = (
         "http://localhost:3000,http://127.0.0.1:3000,"

@@ -37,6 +37,16 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+    expires_at: Optional[datetime] = None
+    idle_timeout_seconds: Optional[int] = None
+    warning_seconds: Optional[int] = None
+
+
+class HeartbeatOut(BaseModel):
+    server_time: datetime
+    expires_at: datetime
+    idle_timeout_seconds: int
+    warning_seconds: int
 
 
 # patient_id is used in URL paths (/api/patients/{patient_id}) and as a DB key —

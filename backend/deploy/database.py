@@ -47,3 +47,5 @@ async def ensure_indexes():
     await db.patients.create_index([("owner_id", 1), ("created_at", -1)])
     await db.predictions.create_index([("owner_id", 1), ("created_at", -1)])
     await db.audit_logs.create_index([("created_at", -1)])
+    await db.sessions.create_index("sid", unique=True)
+    await db.sessions.create_index([("email", 1), ("created_at", -1)])
