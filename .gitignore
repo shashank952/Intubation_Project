@@ -46,4 +46,23 @@ tsconfig.tsbuildinfo
 
 # Agent workspace
 .omo/
+# NOTE: .opencode/ has its own internal .gitignore; agent/*.md files are
+# tracked project config — do not blanket-ignore .opencode/ here.
+.codegraph/
+.playwright-mcp/
+.understand-anything/
+
+# Local datasets & patient data (PHI) — never commit real data or raw images
+DATASET/
+data/raw/
+data/external/
+
+# Unrelated local tooling projects (not part of this repo)
+strix/
+
+# Local design/reference assets
+UI Design/
+
+# Expo
+.expo/
 

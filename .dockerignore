@@ -11,9 +11,22 @@ PPTS_&_Folders/
 monitoring/
 DockerDesktopWSL/
 data/
+DATASET/
+strix/
+UI Design/
+mobile/
+tests/
+monitoring/
+out/
+.omo/
+.opencode/
+.codegraph/
+.playwright-mcp/
+.understand-anything/
 .next/
 *.md
 *.xlsx
 *.log
 *.err
+*.tsbuildinfo
 dataset.xlsx
