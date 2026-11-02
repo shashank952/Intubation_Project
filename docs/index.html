@@ -294,6 +294,7 @@
         <a href="#design"><span>13</span>Why It Looks Like This</a>
         <a href="#stack"><span>14</span>Tech Stack Summary</a>
         <a href="#hld"><span>15</span>High-Level System Design</a>
+        <a href="#limitations"><span>16</span>Limitations &amp; Honest Status</a>
       </div>
     </div>
   </section>
@@ -2465,6 +2466,193 @@ Return ONLY 5 concise bullet points.
           <li>Images are built once in CI, stored in GHCR, and deployed as immutable containers.</li>
         </ul>
       </div>
+    </div>
+  </section>
+
+  <!-- ============================ 16 LIMITATIONS ============================ -->
+  <section id="limitations">
+    <span class="eyebrow">16 · Limitations &amp; Honest Status</span>
+    <h2>What is actually wrong with this project right now</h2>
+    <p class="lead">
+      Read this before quoting any number from this project. Everything below was measured against
+      the real files in this repository, not estimated. Each item says what is wrong and how to fix
+      it. The full version lives in <code>docs/LIMITATIONS.md</code>.
+    </p>
+
+    <div class="card tint-pink">
+      <h3><span class="num">!</span> The one-line summary</h3>
+      <p style="margin-bottom:0;">
+        <strong>The model does not predict anything about patients yet.</strong> It was trained on
+        labels that were <em>calculated by a formula in the code</em>, not recorded from real
+        patients. So the numbers below describe a rule-following exercise, not clinical skill.
+      </p>
+    </div>
+
+    <h3 style="margin-top:28px;">The limitations, ranked</h3>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Limitation</th><th>Severity</th><th>What it blocks</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Labels come from a formula, not from patients</td><td>🔴 Critical</td><td>Any accuracy claim</td></tr>
+        <tr><td>2</td><td>Classes forced to exactly 33 / 33 / 33 %</td><td>🔴 Critical</td><td>Sensitivity, PPV, calibration</td></tr>
+        <tr><td>3</td><td>Accuracy ceiling set by an artificial noise term</td><td>🔴 Critical</td><td>Model comparison</td></tr>
+        <tr><td>4</td><td>The 125 real patients have no outcome column</td><td>🔴 Critical</td><td>Training on real data at all</td></tr>
+        <tr><td>5</td><td>No external or prospective validation</td><td>🔴 Critical</td><td>Any clinical claim</td></tr>
+        <tr><td>6</td><td>LLM writes advice from an unvalidated model</td><td>🔴 Critical</td><td>Patient safety</td></tr>
+        <tr><td>7</td><td>Deep model adds nothing over a shallow baseline</td><td>🟠 High</td><td>Justifying the TabTransformer</td></tr>
+        <tr><td>8</td><td>"Multimodal" is a label, not a capability</td><td>🟠 High</td><td>The stated project scope</td></tr>
+        <tr><td>9</td><td>About half the input fields are constant</td><td>🟠 High</td><td>Feature signal</td></tr>
+        <tr><td>10</td><td>Softmax temperature 5.0 hides miscalibration</td><td>🟠 High</td><td>Any probability shown to a doctor</td></tr>
+        <tr><td>11</td><td>Tests never check the model</td><td>🟠 High</td><td>Value of a green CI run</td></tr>
+        <tr><td>12</td><td>125 patients is too few for 3 classes</td><td>🟠 High</td><td>Statistical validity</td></tr>
+        <tr><td>13</td><td>ONNX export is broken</td><td>🟡 Medium</td><td>Portable deployment</td></tr>
+      </tbody>
+    </table>
+
+    <div class="grid g2" style="margin-top:24px;">
+      <div class="card tint-pink">
+        <h3><span class="num">1</span> The labels are invented</h3>
+        <p><strong>What's wrong:</strong> the <code>Target</code> column was produced by
+          <code>_assign_target()</code> in <code>scripts/generate_synthetic_data.py</code>. It adds
+          points for Mallampati score, neck circumference, BMI class and so on, then cuts the result
+          into three equal groups. No patient outcome was ever observed.</p>
+        <p><strong>Why it matters:</strong> the model learns to repeat a rule written by hand from
+          the same inputs. That is a lookup table, not prediction. It can never discover anything
+          the rule didn't already know.</p>
+        <p><strong>Evidence:</strong> re-applying the project's own rule to the project's own data
+          reproduces the stored labels only <strong>about 78 %</strong> of the time.</p>
+        <p style="margin-bottom:0;"><strong>How to fix it:</strong> record four fields per patient
+          from the theatre notes — Cormack–Lehane grade, number of attempts, whether an adjunct was
+          used, whether a rescue device was needed — then derive <code>Decision</code> from those
+          with a fixed written rule.</p>
+      </div>
+
+      <div class="card tint-yellow">
+        <h3><span class="num">2</span> The classes are 33 / 33 / 33</h3>
+        <p><strong>What's wrong:</strong> the risk score is split at the 33rd and 66th percentile, so
+          the dataset holds exactly one third of each class — Easy 33.3 %, Moderate 33.4 %,
+          Difficult 33.3 %.</p>
+        <p><strong>Why it matters:</strong> real difficult intubation is roughly 5–15 % of patients.
+          Forcing equal thirds teaches a prior wrong by 3–6×, makes
+          <strong>PPV meaningless</strong>, and destroys calibration — which is exactly why the
+          temperature hack below exists.</p>
+        <p><strong>How to fix it:</strong> keep the real prevalence. If Difficult is 8 % of your
+          patients, it should be 8 % of the training set. Rebalance with
+          <code>class_weight</code>, never by changing the label distribution.</p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:20px;">
+      <div class="card tint-yellow">
+        <h3><span class="num">3</span> The ceiling is a random number</h3>
+        <p><strong>What's wrong:</strong> <code>generate_synthetic_data.py</code> adds
+          <code>np.random.normal(0, 1.0)</code> to the score before assigning classes. That makes
+          about 22 % of the labels unlearnable.</p>
+        <p><strong>Why it matters:</strong> every model on this file is capped near 0.80–0.86
+          accuracy no matter how good it is. So <strong>0.859 does not mean "the model is
+          good"</strong> — it means "the model reached the ceiling one line of code imposed".</p>
+        <p style="margin-bottom:0;"><strong>How to fix it:</strong> delete the noise term, and stop
+          citing accuracy from this file as a result.</p>
+      </div>
+
+      <div class="card tint-cyan">
+        <h3><span class="num">4</span> The deep model buys nothing</h3>
+        <p><strong>What's wrong:</strong> the production checkpoint is a TabTransformer with
+          <strong>180,483 parameters</strong> trained on 2,500 synthetic rows.</p>
+        <p><strong>Evidence:</strong> a plain gradient-boosted tree gets <strong>0.804 ± 0.010</strong>
+          accuracy (recall 0.88 / 0.71 / 0.82) on the same table with no tuning.</p>
+        <p><strong>Why it matters:</strong> 180 k parameters reproduce what a shallow tree gets for
+          free. On 125 real patients that is ~1,445 parameters per patient.</p>
+        <p style="margin-bottom:0;"><strong>How to fix it:</strong> make XGBoost the baseline and
+          report it first. Keep the transformer only if it wins with non-overlapping confidence
+          intervals.</p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:20px;">
+      <div class="card tint-pink">
+        <h3><span class="num">5</span> The real data has no answers</h3>
+        <p><strong>What's wrong:</strong> <code>data/raw/merged_laryngoscopy.xlsx</code> is 125 rows
+          × 30 columns — 29 measurements plus <code>Patient_ID</code>. There is no difficulty
+          column. The source spreadsheets contain only predictors too.</p>
+        <p><strong>Why it matters:</strong> you cannot train on "real data only" because there is
+          nothing to train against. This is the single blocker for the whole project.</p>
+        <p style="margin-bottom:0;"><strong>How to fix it:</strong> obtain the intubation records for
+          those 125 patients. If they genuinely cannot be obtained, re-frame the project — a
+          rule-based checklist, a prospective collection plan, or a public dataset with outcomes —
+          before writing any more model code.</p>
+      </div>
+
+      <div class="card tint-pink">
+        <h3><span class="num">6</span> The LLM sounds certain about an unvalidated model</h3>
+        <p><strong>What's wrong:</strong> the AI assistant writes a clinical summary and
+          recommendations from a prediction that comes from formula-made labels and a flattened
+          probability.</p>
+        <p><strong>Why it matters:</strong> fluent clinical prose is the most dangerous output in the
+          system, because it reads like advice. A wrong prediction in good sentences is worse than
+          no output at all.</p>
+        <p style="margin-bottom:0;"><strong>How to fix it:</strong> until the model is validated,
+          label the text as <em>"example output, not medical advice"</em>, keep the
+          <code>source: llm | fallback</code> badge visible, and add a permanent disclaimer to every
+          report.</p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:20px;">
+      <div class="card tint-yellow">
+        <h3><span class="num">7</span> Half the form is empty</h3>
+        <p><strong>What's wrong:</strong> on the 125 real rows, <strong>14 of 29 features are
+          constant</strong> — identical for every patient. <code>Neck_Movement_Degrees = 85</code>
+          for all 125, which is a default fill, not a measurement. <strong>29 rows are exact
+          duplicates</strong> on their features.</p>
+        <p><strong>How to fix it:</strong> fix the collection form before recruiting more patients.
+          Record "not measured" explicitly instead of filling a default. Re-audit variance after
+          every 50 new patients and drop columns that stay constant.</p>
+        <p style="margin-bottom:0;">Only about <strong>15 columns vary at all</strong> — that is the
+          true size of the problem the model is being asked to solve.</p>
+      </div>
+
+      <div class="card tint-yellow">
+        <h3><span class="num">8</span> A calibration hack is hiding the problem</h3>
+        <p><strong>What's wrong:</strong> <code>MODEL_SOFTMAX_TEMPERATURE = 5.0</code>. Every
+          prediction is computed as <code>softmax(logits / 5.0)</code>.</p>
+        <p><strong>Why it matters:</strong> dividing logits by 5 flattens the output so the API stops
+          returning 99 % confidence. It treats the symptom, not the cause.
+          <strong>Any probability the dashboard shows a clinician today is cosmetic.</strong></p>
+        <p style="margin-bottom:0;"><strong>How to fix it:</strong> retrain on real labels, plot a
+          reliability curve on held-out data, and fit the temperature there — it should land near
+          <strong>1.0</strong>. If it doesn't, fix the model, not the temperature.</p>
+      </div>
+    </div>
+
+    <div class="card flat tint-grey" style="margin-top:20px;">
+      <h3><span class="num">9</span> What is <em>not</em> a problem (checked)</h3>
+      <ul style="padding-left:18px;margin:0;">
+        <li><strong>Train/test leakage from the bootstrap augmentation.</strong> The 2,500 rows come
+          from 45 real seeds, which normally leaks. Tested: random split vs group-aware split gave
+          0.804 vs 0.809. No meaningful inflation — the inflated numbers come from items 1 and 2.</li>
+        <li><strong>Authentication and sessions.</strong> Server-enforced sessions, <code>sid</code>
+          claims, idle and absolute timeouts, and rate limits are implemented and tested.</li>
+        <li><strong>Secrets.</strong> The JWT secret has a random per-boot backstop; nothing is
+          committed.</li>
+        <li><strong>PHI containment.</strong> <code>data/raw/</code> is gitignored and
+          dockerignored.</li>
+      </ul>
+    </div>
+
+    <div class="card tint-lime" style="margin-top:20px;">
+      <h3><span class="num">→</span> Recommended order of work</h3>
+      <ol style="padding-left:18px;margin:0;">
+        <li><strong>Get outcomes for the 125 patients</strong> — everything else is blocked on this.</li>
+        <li><strong>Write and freeze the label rule</strong> (Easy / Moderate / Difficult).</li>
+        <li><strong>Delete the noise term</strong> and stop citing synthetic accuracy.</li>
+        <li><strong>Make XGBoost the baseline</strong>, binary or ordinal first.</li>
+        <li><strong>Fix the feature form</strong> so future data is worth collecting.</li>
+        <li><strong>Recalibrate</strong> and add a model regression test.</li>
+        <li><strong>Banner the docs and UI</strong> with the true scope.</li>
+        <li><strong>Fix ONNX</strong> only when someone actually needs it.</li>
+      </ol>
     </div>
   </section>
 
