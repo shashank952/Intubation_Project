@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import { Stethoscope } from 'lucide-react';
 
 type NeoLoaderVariant = 'inline' | 'block' | 'page';
 
@@ -65,34 +64,17 @@ export default function NeoLoader({ variant = 'block', label, className }: NeoLo
       <div
         role="status"
         aria-live="polite"
-        className={clsx(
-          'flex min-h-screen items-center justify-center bg-paper p-4 dark:bg-[#121212]',
-          className
-        )}
+        className={clsx('neo-loader-page-surface flex min-h-[100dvh] items-center justify-center', className)}
       >
-        <div className="w-full max-w-xs animate-fade-in rounded-[4px] border-2 border-black bg-white p-6 shadow-[8px_8px_0_#111111] dark:border-neutral-600 dark:bg-neutral-900 dark:shadow-[8px_8px_0_#3F3F46]">
-          <div className="flex items-center gap-3">
-            <div
-              aria-hidden="true"
-              className="flex h-10 w-10 items-center justify-center rounded-[4px] border-2 border-black bg-black shadow-[2px_2px_0_#111111]"
-            >
-              <Stethoscope className="h-5 w-5 text-white" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-mono text-xs font-bold uppercase tracking-[0.22em] text-neutral-800 dark:text-neutral-100">
-                Airway MD
-              </p>
-              <p className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
-                {statusText}
-              </p>
-            </div>
-          </div>
-          <ScanBar className="mt-5 h-3" />
-          <div className="mt-4 flex items-center">
-            <PulseBlocks variant="page" />
-          </div>
-          <span className="sr-only">{statusText}</span>
-        </div>
+        <svg
+          aria-hidden="true"
+          className="neo-loader-airway-mark h-16 w-16"
+          viewBox="0 0 80 80"
+          fill="none"
+        >
+          <path d="M12 39 34 16l23 22-21 23" />
+        </svg>
+        <span className="sr-only">{statusText}</span>
       </div>
     );
   }

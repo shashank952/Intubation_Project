@@ -4,6 +4,8 @@
 
 :root {
   --paper: 245 241 220;
+  --loader-surface: 234 242 255;
+  --loader-ink: 88 90 99;
   --brand-50: 255 251 234;
   --brand-100: 255 243 194;
   --brand-200: 255 232 138;
@@ -15,6 +17,11 @@
   --brand-800: 158 133 0;
   --brand-900: 107 93 0;
   --brand-950: 58 50 0;
+}
+
+.dark {
+  --loader-surface: 17 24 39;
+  --loader-ink: 226 232 240;
 }
 
 [data-theme='teal'] {
@@ -286,6 +293,28 @@
   animation: neoScanSweep 1.1s steps(8, end) infinite;
 }
 
+.neo-loader-page-surface {
+  background-color: rgb(var(--loader-surface));
+  color: rgb(var(--loader-ink));
+}
+
+.neo-loader-airway-mark {
+  stroke: currentColor;
+  stroke-width: 4.5;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  stroke-dasharray: 118;
+  stroke-dashoffset: 118;
+  animation: neoAirwayDraw 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes neoAirwayDraw {
+  0% { stroke-dashoffset: 118; opacity: 0.35; }
+  55% { stroke-dashoffset: 0; opacity: 1; }
+  78% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -8; opacity: 0.85; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .neo-loader-block {
     animation: none;
@@ -295,6 +324,10 @@
     width: 100%;
     transform: none;
     opacity: 0.5;
+  }
+  .neo-loader-airway-mark {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }
 
