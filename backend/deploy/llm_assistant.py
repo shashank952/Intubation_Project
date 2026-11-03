@@ -1,7 +1,8 @@
 import asyncio
 import logging
+import re
 import time
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from openai import OpenAI
 
@@ -37,6 +38,27 @@ def report_deadline() -> float:
     return time.monotonic() + settings.llm_report_budget_seconds
 
 
+_BULLET_PREFIX = re.compile(r"^\s*(?:[-*\u2022]|\d+[.)])\s+")
+
+
+def _normalize_bullets(text: str) -> str:
+    lines = []
+    for raw in text.splitlines():
+        line = _BULLET_PREFIX.sub("", raw.strip()).replace("**", "").strip()
+        if line:
+            lines.append(f"- {line}")
+    return "\n".join(lines)
+
+
+def _model_chain() -> List[str]:
+    chain = [settings.llm_model]
+    for extra in settings.llm_fallback_models.split(","):
+        name = extra.strip()
+        if name and name not in chain:
+            chain.append(name)
+    return chain
+
+
 def _is_feasible(text: str) -> bool:
     stripped = text.strip()
     return len(stripped) >= 15
@@ -50,6 +72,7 @@ def _call_llm(
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
 
+    chain = _model_chain()
     last_err: Optional[Exception] = None
     attempts_made = 0
     for attempt in range(settings.llm_retries + 1):
@@ -67,33 +90,42 @@ def _call_llm(
             if remaining is None
             else min(settings.llm_timeout, remaining)
         )
+        model = chain[attempt % len(chain)]
         start = time.time()
         try:
             client = _get_client()
             resp = client.chat.completions.create(
-                model=settings.llm_model,
+                model=model,
                 messages=messages,
                 temperature=settings.llm_temperature,
                 max_tokens=settings.llm_max_tokens,
                 timeout=attempt_timeout,
             )
-            text = resp.choices[0].message.content
-            if text and _is_feasible(text):
+            choices = getattr(resp, "choices", None)
+            raw = choices[0].message.content if choices else None
+            text = _normalize_bullets(raw) if raw else ""
+            if _is_feasible(text):
                 logger.info(
-                    "LLM ok in %.2fs (attempt %d/%d)",
+                    "LLM ok in %.2fs (attempt %d/%d, model=%s)",
                     time.time() - start,
                     attempt + 1,
                     settings.llm_retries + 1,
+                    model,
                 )
-                return text.strip()
-            last_err = RuntimeError("empty or non-feasible LLM response")
-            logger.warning("LLM attempt %d: %s", attempt + 1, last_err)
+                return text
+            last_err = RuntimeError(
+                "empty or non-feasible LLM response"
+                if choices
+                else "LLM response contained no choices"
+            )
+            logger.warning("LLM attempt %d (%s): %s", attempt + 1, model, last_err)
         except Exception as e:
             last_err = e
             logger.warning(
-                "LLM attempt %d/%d failed after %.1fs: %s",
+                "LLM attempt %d/%d (%s) failed after %.1fs: %s",
                 attempt + 1,
                 settings.llm_retries + 1,
+                model,
                 time.time() - start,
                 e,
             )

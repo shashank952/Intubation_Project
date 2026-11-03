@@ -26,7 +26,10 @@ class Settings(BaseSettings):
 
     llm_api_url: str = "https://openrouter.ai/api/v1"
     llm_api_key: str = ""
-    llm_model: str = "qwen/qwen-2.5-72b-instruct"
+    llm_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
+    # Comma-separated fallbacks tried on successive attempts when the primary
+    # model is rate-limited, overloaded, or returns an empty completion.
+    llm_fallback_models: str = "qwen/qwen-2.5-72b-instruct"
     llm_temperature: float = 0.3
     llm_max_tokens: int = 512
     # Per-HTTP-attempt timeout. The OpenAI SDK's own retries are disabled so
