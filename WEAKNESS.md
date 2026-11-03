@@ -5,7 +5,7 @@ Status legend: ✅ Implemented · 🔶 Partial · ⬜ Pending
 | # | Weakness | Status | Counter-measure | Where |
 |---|----------|--------|-----------------|-------|
 | 1 | Silent failure masking (LLM failures invisible, fallback used silently) | ✅ | LLM connectivity check on login, response feasibility validation, structured logging, `source` flag (`llm`/`fallback`) saved per report, UI badge for AI status, UI notice when fallback is shown | `llm_assistant.py`, `routers/llm.py`, `routers/predictions.py`, dashboard, `AiClinicalAssessment` |
-| 2 | No retries / no timeout (slow LLM hangs the request) | ✅ | Backend: 15s per-attempt timeout + 1 retry with backoff. Frontend: "LLM response is taking longer than usual" after 5s, hard 35s timeout → "Time limit exceeded" error message shown in UI | `llm_assistant.py`, `config.py`, `api.ts`, dashboard |
+| 2 | No retries / no timeout (slow LLM hangs the request) | ✅ | Backend: 12s per-attempt timeout, SDK retries disabled, 1 retry with backoff, summary + recommendations in parallel under a 28s `LLM_REPORT_BUDGET_SECONDS` cap (overrun -> fallback report). Frontend: slow warning at 5s, 45s abort → "Time limit exceeded" error message shown in UI | `llm_assistant.py`, `config.py`, `api.ts`, dashboard |
 | 3 | Incomplete context (LLM only saw 6 fields) | ✅ | Full patient profile — ALL categorical + numerical fields from the doctor's input are sent in the prompt | `llm_assistant.py` (`build_patient_profile`) |
 | 4 | Synchronous generation adds latency | ✅ (Option B: bounded sync + UX states) | LLM call runs off the event loop (thread) so other requests stay responsive; UI shows loading → "taking longer than usual" → timeout error. Full async (Option A) noted as future work | `routers/predictions.py`, dashboard |
 | 5 | Duplicate prompt templates (drift risk) | ✅ | Single shared prompt builder for both summary and recommendations | `llm_assistant.py` (`_build_report_prompt`) |
@@ -20,9 +20,10 @@ Status legend: ✅ Implemented · 🔶 Partial · ⬜ Pending
 - [x] UI shows a notice when a fallback (standard guidance) was used instead of a live AI answer.
 
 ## 2. No retries / no timeout
-- [x] Backend: per-call timeout (`LLM_TIMEOUT` = 15s), 1 retry with backoff (`LLM_RETRIES` = 1).
+- [x] Backend: per-call timeout (`LLM_TIMEOUT` = 12s), 1 retry with backoff (`LLM_RETRIES` = 1).
+- [x] Backend: OpenAI SDK retries disabled (`max_retries=0`); summary + recommendations run in parallel, bounded by `LLM_REPORT_BUDGET_SECONDS` = 28s, then fallback text.
+- [x] Frontend: hard timeout at 45s, kept above the server budget so the server's fallback report wins the race.
 - [x] Frontend: slow-warning message after 5s of waiting: "The LLM response is taking longer than usual. Please wait…"
-- [x] Frontend: hard timeout at 35s aborts the request and shows: "Time limit exceeded. There has been an error with the LLM response. Please wait for a while and try again."
 
 ## 3. Incomplete context
 - [x] `build_patient_profile` now includes every categorical and numerical field the doctor provides (demographics, airway, physical, disease, symptoms, injury flags, derived categories).

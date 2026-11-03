@@ -81,7 +81,7 @@ export default function DashboardPage() {
       .catch(() => setLlmStatus('offline'));
     const controller = new AbortController();
     const slowTimer = setTimeout(() => setPredictingSlow(true), 5000);
-    const failTimer = setTimeout(() => controller.abort(), 35000);
+    const failTimer = setTimeout(() => controller.abort(), 45000);
     try {
       await createPatient({
         patient_id: data.patient_id, age: data.age, gender: data.gender, bmi: data.bmi,
@@ -94,7 +94,7 @@ export default function DashboardPage() {
       fetchPredictions();
     } catch (err) {
       if (controller.signal.aborted) {
-        setError('Time limit exceeded. There has been an error with the LLM response. Please wait for a while and try again.');
+        setError('Time limit exceeded. The server did not respond in time. Please wait a moment and try again.');
       } else {
         setError(err instanceof Error ? err.message : 'Prediction failed. Please try again.');
       }

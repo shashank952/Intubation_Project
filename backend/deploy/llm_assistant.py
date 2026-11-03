@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 from typing import Dict, Optional, Tuple
@@ -27,8 +28,13 @@ def _get_client() -> OpenAI:
             api_key=settings.llm_api_key or "no-key",
             base_url=settings.llm_api_url,
             timeout=settings.llm_timeout,
+            max_retries=0,
         )
     return _client
+
+
+def report_deadline() -> float:
+    return time.monotonic() + settings.llm_report_budget_seconds
 
 
 def _is_feasible(text: str) -> bool:
@@ -36,23 +42,40 @@ def _is_feasible(text: str) -> bool:
     return len(stripped) >= 15
 
 
-def _call_llm(prompt: str, system: str = "") -> Optional[str]:
-    client = _get_client()
+def _call_llm(
+    prompt: str, system: str = "", deadline: Optional[float] = None
+) -> Optional[str]:
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
 
     last_err: Optional[Exception] = None
+    attempts_made = 0
     for attempt in range(settings.llm_retries + 1):
+        attempts_made = attempt + 1
+        remaining = None if deadline is None else deadline - time.monotonic()
+        if remaining is not None and remaining <= 0.01:
+            logger.warning(
+                "LLM budget exhausted before attempt %d/%d",
+                attempt + 1,
+                settings.llm_retries + 1,
+            )
+            break
+        attempt_timeout = (
+            settings.llm_timeout
+            if remaining is None
+            else min(settings.llm_timeout, remaining)
+        )
         start = time.time()
         try:
+            client = _get_client()
             resp = client.chat.completions.create(
                 model=settings.llm_model,
                 messages=messages,
                 temperature=settings.llm_temperature,
                 max_tokens=settings.llm_max_tokens,
-                timeout=settings.llm_timeout,
+                timeout=attempt_timeout,
             )
             text = resp.choices[0].message.content
             if text and _is_feasible(text):
@@ -75,9 +98,12 @@ def _call_llm(prompt: str, system: str = "") -> Optional[str]:
                 e,
             )
         if attempt < settings.llm_retries:
-            time.sleep(1.0 * (attempt + 1))
+            backoff = 1.0 * (attempt + 1)
+            if deadline is not None and time.monotonic() + backoff >= deadline:
+                break
+            time.sleep(backoff)
 
-    logger.error("LLM failed after %d attempts: %s", settings.llm_retries + 1, last_err)
+    logger.error("LLM failed after %d attempt(s): %s", attempts_made, last_err)
     return None
 
 
@@ -85,7 +111,7 @@ def check_llm_connection() -> Tuple[bool, Optional[float]]:
     try:
         client = _get_client()
         start = time.time()
-        client.models.list()
+        client.models.list(timeout=settings.llm_timeout)
         latency_ms = round((time.time() - start) * 1000, 1)
         logger.info("LLM connection check OK (%.1f ms)", latency_ms)
         return True, latency_ms
@@ -236,12 +262,13 @@ def generate_clinical_summary(
     confidence: float,
     probabilities: Dict[str, float],
     patient_data: dict,
+    deadline: Optional[float] = None,
 ) -> Tuple[str, str]:
     profile = build_patient_profile(patient_data)
     prompt = _build_report_prompt(
         "summary", prediction, confidence, probabilities, profile
     )
-    text = _call_llm(prompt, SYSTEM_PROMPT)
+    text = _call_llm(prompt, SYSTEM_PROMPT, deadline)
     if text is None:
         logger.warning("Summary generation failed -> using fallback")
         return _fallback_summary(prediction, confidence, patient_data), "fallback"
@@ -253,13 +280,75 @@ def generate_recommendations(
     confidence: float,
     probabilities: Dict[str, float],
     patient_data: dict,
+    deadline: Optional[float] = None,
 ) -> Tuple[str, str]:
     profile = build_patient_profile(patient_data)
     prompt = _build_report_prompt(
         "recommendations", prediction, confidence, probabilities, profile
     )
-    text = _call_llm(prompt, SYSTEM_PROMPT)
+    text = _call_llm(prompt, SYSTEM_PROMPT, deadline)
     if text is None:
         logger.warning("Recommendations generation failed -> using fallback")
         return _fallback_recommendations(prediction), "fallback"
     return text, "llm"
+
+
+def fallback_reports(
+    prediction: str, confidence: float, patient_data: dict
+) -> Tuple[str, str, str, str]:
+    return (
+        _fallback_summary(prediction, confidence, patient_data),
+        "fallback",
+        _fallback_recommendations(prediction),
+        "fallback",
+    )
+
+
+async def generate_reports(
+    prediction: str,
+    confidence: float,
+    probabilities: Dict[str, float],
+    patient_data: dict,
+) -> Tuple[str, str, str, str]:
+    deadline = report_deadline()
+    summary_task = asyncio.create_task(
+        asyncio.to_thread(
+            generate_clinical_summary,
+            prediction, confidence, probabilities, patient_data, deadline,
+        )
+    )
+    recommendations_task = asyncio.create_task(
+        asyncio.to_thread(
+            generate_recommendations,
+            prediction, confidence, probabilities, patient_data, deadline,
+        )
+    )
+    done, pending = await asyncio.wait(
+        {summary_task, recommendations_task},
+        timeout=settings.llm_report_budget_seconds,
+    )
+    for task in pending:
+        task.cancel()
+    if pending:
+        logger.warning(
+            "LLM report budget of %.1fs exceeded for %d/2 report(s) -> fallback",
+            settings.llm_report_budget_seconds,
+            len(pending),
+        )
+
+    fallback_summary_text, fallback_source, fallback_recs_text, fallback_recs_source = (
+        fallback_reports(prediction, confidence, patient_data)
+    )
+
+    def settled(task, default):
+        if task in done and not task.cancelled() and task.exception() is None:
+            return task.result()
+        return default
+
+    summary, summary_source = settled(
+        summary_task, (fallback_summary_text, fallback_source)
+    )
+    recommendations, recommendations_source = settled(
+        recommendations_task, (fallback_recs_text, fallback_recs_source)
+    )
+    return summary, summary_source, recommendations, recommendations_source

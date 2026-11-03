@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from pathlib import Path
 from typing import List
 from datetime import datetime, timezone
-import asyncio
 import torch
 import pandas as pd
 import numpy as np
@@ -14,7 +13,7 @@ from ..database import get_db
 from ..auth import get_current_user, require_role
 from ..schemas import PredictionInput, PredictionOut, LLMReportOut
 from ..model_loader import predict_tabular
-from ..llm_assistant import generate_clinical_summary, generate_recommendations
+from ..llm_assistant import generate_reports
 from backend.data.preprocessing import CATEGORICAL_COLS, NUMERICAL_COLS
 
 router = APIRouter(prefix="/api/predictions", tags=["predictions"])
@@ -134,13 +133,8 @@ async def run_prediction(
     pred_doc.pop("_id", None)
 
     patient_data = data.model_dump()
-    summary, summary_source = await asyncio.to_thread(
-        generate_clinical_summary,
-        result["prediction"], result["confidence"], result["probabilities"], patient_data,
-    )
-    recommendations, recommendations_source = await asyncio.to_thread(
-        generate_recommendations,
-        result["prediction"], result["confidence"], result["probabilities"], patient_data,
+    summary, summary_source, recommendations, recommendations_source = await generate_reports(
+        result["prediction"], result["confidence"], result["probabilities"], patient_data
     )
 
     llm_doc = {
