@@ -59,6 +59,14 @@ def _model_chain() -> List[str]:
     return chain
 
 
+def _extra_body() -> dict:
+    # Reasoning models spend the whole token budget thinking and return empty
+    # content, so ask OpenRouter to skip it. Other providers reject the field.
+    if "openrouter" in settings.llm_api_url.lower():
+        return {"reasoning": {"enabled": False}}
+    return {}
+
+
 def _is_feasible(text: str) -> bool:
     stripped = text.strip()
     return len(stripped) >= 15
@@ -100,9 +108,11 @@ def _call_llm(
                 temperature=settings.llm_temperature,
                 max_tokens=settings.llm_max_tokens,
                 timeout=attempt_timeout,
+                extra_body=_extra_body(),
             )
             choices = getattr(resp, "choices", None)
-            raw = choices[0].message.content if choices else None
+            choice = choices[0] if choices else None
+            raw = choice.message.content if choice else None
             text = _normalize_bullets(raw) if raw else ""
             if _is_feasible(text):
                 logger.info(
@@ -114,7 +124,8 @@ def _call_llm(
                 )
                 return text
             last_err = RuntimeError(
-                "empty or non-feasible LLM response"
+                f"empty or non-feasible LLM response "
+                f"(finish_reason={getattr(choice, 'finish_reason', None)})"
                 if choices
                 else "LLM response contained no choices"
             )
