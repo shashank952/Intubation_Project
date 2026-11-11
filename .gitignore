@@ -39,3 +39,7 @@ logs/
 
 # Tool cache
 .understand-anything/
+
+# Scratch / derived patient tables
+data/temp/
+data/raw/

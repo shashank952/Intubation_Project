@@ -118,3 +118,39 @@ class LLMReportOut(BaseModel):
     summary_source: Optional[str] = None
     recommendations_source: Optional[str] = None
     created_at: datetime
+
+
+class ImageQualityOut(BaseModel):
+    width: int
+    height: int
+    megapixels: float
+    blur_score: float
+    brightness_mean: float
+    brightness_std: float
+    faces: int
+    face_area_frac: Optional[float] = None
+    usable: bool
+    issues: List[str] = Field(default_factory=list)
+
+
+class ImageGeometryOut(BaseModel):
+    iod_px: Optional[float] = None
+    mouth_width_px: Optional[float] = None
+    mouth_to_iod: Optional[float] = None
+    mouth_to_face_w: Optional[float] = None
+    yaw_proxy: Optional[float] = None
+    roll_proxy: Optional[float] = None
+    mouth_dark_frac: Optional[float] = None
+    mouth_open_extent: Optional[float] = None
+
+
+class ImageAnalyzeOut(BaseModel):
+    status: str
+    redacted: bool
+    faces_redacted: int
+    quality: ImageQualityOut
+    geometry: Optional[ImageGeometryOut] = None
+    auto_fill: dict = Field(default_factory=dict)
+    auto_fill_note: str
+    preview_data_uri: Optional[str] = None
+    warnings: List[str] = Field(default_factory=list)

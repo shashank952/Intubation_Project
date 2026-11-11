@@ -26,6 +26,8 @@ services:
         value: checkpoints/tabular_best.pt
       - key: MODEL_DEVICE
         value: cpu
+      - key: FACE_MODEL_PATH
+        value: /app/checkpoints/yolo26n-face.pt
 
 # The frontend is hosted on Vercel (set NEXT_PUBLIC_API_URL there to this
 # service's URL). The previous airway-frontend Render service was removed.

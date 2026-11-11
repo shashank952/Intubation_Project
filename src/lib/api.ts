@@ -6,6 +6,7 @@ import type {
   PredictionHistory,
   LLMReport,
   LlmStatus,
+  ImageAnalysis,
 } from '@/types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -212,3 +213,34 @@ export async function exportCsv(): Promise<Blob> {
 
 export { getToken, setToken, clearToken, getUser, setUser };
 export { BASE_URL };
+
+/**
+ * Upload a photo for a quality/geometry check.
+ * The server redacts the eyes before returning anything; if no face is found it
+ * returns no preview at all. FormData is used directly because apiFetch forces
+ * a JSON content type.
+ */
+export async function analyzeImage(file: File, patientId?: string): Promise<ImageAnalysis> {
+  const token = getToken();
+  const form = new FormData();
+  form.append('file', file);
+  if (patientId) form.append('patient_id', patientId);
+
+  const response = await fetch(`${BASE_URL}/api/images/analyze`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: form,
+  });
+
+  if (!response.ok) {
+    let message = `Image analysis failed: ${response.status}`;
+    try {
+      message = formatApiError(await response.json()) || message;
+    } catch {
+      // keep the status-based message
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}

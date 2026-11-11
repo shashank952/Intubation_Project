@@ -52,6 +52,8 @@ export interface PredictionInput {
   jaw_movement?: string;
   neck_movement_category?: string;
   tissue_flexibility?: string;
+  teeth?: string;
+  chest_size_cm?: number;
 }
 
 export interface PredictionResult {
@@ -91,4 +93,40 @@ export interface LlmStatus {
   connected: boolean;
   model: string;
   latency_ms: number | null;
+}
+
+export interface ImageQuality {
+  width: number;
+  height: number;
+  megapixels: number;
+  blur_score: number;
+  brightness_mean: number;
+  brightness_std: number;
+  faces: number;
+  face_area_frac: number | null;
+  usable: boolean;
+  issues: string[];
+}
+
+export interface ImageGeometry {
+  iod_px: number | null;
+  mouth_width_px: number | null;
+  mouth_to_iod: number | null;
+  mouth_to_face_w: number | null;
+  yaw_proxy: number | null;
+  roll_proxy: number | null;
+  mouth_dark_frac: number | null;
+  mouth_open_extent: number | null;
+}
+
+export interface ImageAnalysis {
+  status: string;
+  redacted: boolean;
+  faces_redacted: number;
+  quality: ImageQuality;
+  geometry: ImageGeometry | null;
+  auto_fill: Record<string, never>;
+  auto_fill_note: string;
+  preview_data_uri: string | null;
+  warnings: string[];
 }
