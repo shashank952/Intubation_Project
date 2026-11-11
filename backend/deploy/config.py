@@ -1,10 +1,10 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Literal, Optional
 
 
 class Settings(BaseSettings):
     app_name: str = "Airway Assessment API"
-    app_version: str = "2.0.0"
+    app_version: str = "2.1.0"
     debug: bool = False
 
     mongo_url: str = "mongodb://localhost:27017"
@@ -36,8 +36,14 @@ class Settings(BaseSettings):
     llm_model: str = "qwen/qwen-2.5-72b-instruct"
     llm_temperature: float = 0.3
     llm_max_tokens: int = 512
-    llm_timeout: float = 15.0
+    # Per-HTTP-attempt timeout. The OpenAI SDK's own retries are disabled so
+    # this is the only per-attempt bound.
+    llm_timeout: float = 12.0
     llm_retries: int = 1
+    # Hard wall-clock cap for the whole summary+recommendations step. Exceeding
+    # it returns canned fallback text instead of hanging the prediction request.
+    # Must stay comfortably below the clients' abort timeout (45s).
+    llm_report_budget_seconds: float = 28.0
     llm_external_enabled: bool = True
 
     model_checkpoint: str = "checkpoints/tabular_best.pt"
@@ -49,6 +55,8 @@ class Settings(BaseSettings):
     # Softmax temperature to soften extreme logits (synthetic-data training).
     # Calibration debt: tune on held-out real data before clinical use.
     model_softmax_temperature: float = 5.0
+
+    prediction_model: Literal["real", "synthetic"] = "real"
 
     # Trust X-Forwarded-For for rate limiting only behind a trusted TLS proxy.
     behind_proxy: bool = False

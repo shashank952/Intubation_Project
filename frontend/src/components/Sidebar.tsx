@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   History,
+  Images,
   FileText,
   Settings,
   User,
@@ -22,6 +23,7 @@ import { getUser, logout } from '@/lib/api';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/history', label: 'Patient Records', icon: History },
+  { href: '/images', label: 'Images', icon: Images },
   { href: '/reports', label: 'Reports', icon: FileText },
   { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/about', label: 'About', icon: User },

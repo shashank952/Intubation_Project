@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Edit3, Plus, Activity } from 'lucide-react';
+import { LogOut, User, Edit3, Plus, Activity, Camera, ClipboardList, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
 import Sidebar from '@/components/Sidebar';
 import NeoLoader from '@/components/NeoLoader';
@@ -11,6 +11,7 @@ import RiskPredictionCard from '@/components/RiskPredictionCard';
 import AiClinicalAssessment from '@/components/AiClinicalAssessment';
 import PatientForm from '@/components/PatientForm';
 import PatientHistory from '@/components/PatientHistory';
+import ImageUploadCard from '@/components/ImageUploadCard';
 import StatsCard from '@/components/StatsCard';
 import MiniHistory from '@/components/MiniHistory';
 
@@ -33,6 +34,8 @@ export default function DashboardPage() {
   const [llmStatus, setLlmStatus] = useState<'checking' | 'connected' | 'offline' | null>(null);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'easy' | 'moderate' | 'difficult'>('all');
   const [showForm, setShowForm] = useState(true);
+  const [activeTab, setActiveTab] = useState<'assessment' | 'photo'>('assessment');
+  const [photoPatientId, setPhotoPatientId] = useState('');
 
   const {
     status,
@@ -163,6 +166,22 @@ export default function DashboardPage() {
 
   const displayError = status === 'error' ? error : null;
 
+  const tabButton = (id: 'assessment' | 'photo', label: string, Icon: React.ElementType) => (
+    <button
+      type="button"
+      onClick={() => setActiveTab(id)}
+      className={clsx(
+        'flex items-center gap-1.5 rounded-[3px] px-4 py-1.5 text-xs font-semibold transition-smooth',
+        activeTab === id
+          ? 'bg-brand-500 text-black shadow-[2px_2px_0_#111111]'
+          : 'text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-300 dark:hover:bg-neutral-700'
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-paper dark:bg-[#121212]">
       <Sidebar />
@@ -253,6 +272,12 @@ export default function DashboardPage() {
             </div>
           )}
 
+          <div className="mb-6 inline-flex gap-1 rounded-[4px] border-2 border-black bg-neutral-100 p-1 dark:border-neutral-600 dark:bg-neutral-800">
+            {tabButton('assessment', 'Assessment', ClipboardList)}
+            {tabButton('photo', 'Photo', Camera)}
+          </div>
+
+          <div className={activeTab === 'assessment' ? 'contents space-y-6' : 'hidden'}>
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
             <div className="space-y-4 animate-rise stagger-1 lg:col-span-7">
               {showForm ? (
@@ -339,6 +364,56 @@ export default function DashboardPage() {
                 if (selectedPrediction?.id === id) handleClearSelection();
               }}
             />
+          </div>
+          </div>
+
+          <div className={activeTab === 'photo' ? 'contents' : 'hidden'}>
+            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+              <div className="space-y-4 animate-rise lg:col-span-7">
+                <div className="rounded-[4px] border-2 border-black bg-white p-4 shadow-card dark:border-neutral-600 dark:bg-neutral-900">
+                  <label htmlFor="photo-patient" className="mb-1.5 block text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                    Patient ID (optional)
+                  </label>
+                  <input
+                    id="photo-patient"
+                    type="text"
+                    value={photoPatientId}
+                    onChange={(e) => setPhotoPatientId(e.target.value)}
+                    placeholder="e.g. P-0001"
+                    className="w-full rounded-[4px] border-2 border-black bg-white px-3 py-2 text-sm transition-smooth focus:outline-none focus:ring-2 focus:ring-brand-300 dark:border-neutral-600 dark:bg-neutral-800"
+                  />
+                  <p className="mt-1 text-[10px] text-neutral-400">
+                    Used only for the audit log. Leave blank to check a photo without attaching it to a patient.
+                  </p>
+                </div>
+
+                <ImageUploadCard patientId={photoPatientId.trim() || undefined} />
+              </div>
+
+              <aside className="space-y-4 animate-rise lg:col-span-5">
+                <div className="rounded-[4px] border-2 border-black bg-white p-4 shadow-card dark:border-neutral-600 dark:bg-neutral-900">
+                  <div className="mb-2 flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+                    <h2 className="text-sm font-semibold text-neutral-800 dark:text-neutral-50">What happens to the photo</h2>
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+                    <li>Eyes are covered on the server before anything comes back.</li>
+                    <li>If no face is found, no preview is returned at all.</li>
+                    <li>The image is never written to disk or to the database.</li>
+                    <li>The check reports sharpness, brightness, face size and framing.</li>
+                  </ul>
+                </div>
+
+                <div className="rounded-[4px] border-2 border-black bg-white p-4 shadow-card dark:border-neutral-600 dark:bg-neutral-900">
+                  <h2 className="mb-2 text-sm font-semibold text-neutral-800 dark:text-neutral-50">What it does not do</h2>
+                  <ul className="space-y-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+                    <li>It does not auto-fill clinical fields.</li>
+                    <li>Photo measurements did not improve the difficulty model on this dataset.</li>
+                    <li>The risk prediction still comes from the measurements in the Assessment tab.</li>
+                  </ul>
+                </div>
+              </aside>
+            </div>
           </div>
           </div>
         </main>

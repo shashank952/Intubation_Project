@@ -21,6 +21,12 @@ services:
         value: checkpoints/tabular_best.pt
       - key: MODEL_DEVICE
         value: cpu
+      - key: PREDICTION_MODEL
+        value: real
+      - key: REAL_MODEL_PATH
+        value: checkpoints/tabular_real_v1.joblib
+      - key: FACE_MODEL_PATH
+        sync: false
 
   - type: web
     name: airway-frontend

@@ -11,7 +11,7 @@ from .config import settings
 from .database import connect_db, close_db, ensure_indexes, client
 from .logging_config import setup_logging
 from .model_loader import load_model, get_model_info, model_status
-from .routers import auth, llm, patients, predictions
+from .routers import auth, images, llm, patients, predictions
 
 setup_logging(debug=settings.debug)
 
@@ -100,6 +100,7 @@ app.include_router(auth.router)
 app.include_router(llm.router)
 app.include_router(patients.router)
 app.include_router(predictions.router)
+app.include_router(images.router)
 
 
 @app.get("/health")

@@ -45,6 +45,7 @@ const defaultFormData: PredictionInput = {
   injury_swelling: 'No',
   injury_previous_neck_fracture: 'No',
   previous_emergencies_icu: 'No',
+  teeth: '',
 };
 
 export default function PatientForm({ onSubmit, loading, initialData, compact }: PatientFormProps) {
@@ -84,7 +85,7 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit({
+      const payload: PredictionInput = {
         ...formData,
         age: Number(formData.age),
         bmi: Number(formData.bmi),
@@ -94,7 +95,12 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
         mouth_opening: Number(formData.mouth_opening),
         smd: Number(formData.smd),
         neck_movement: Number(formData.neck_movement),
-      });
+      };
+      const chest = `${formData.chest_size_cm ?? ''}`.trim();
+      if (chest !== '') payload.chest_size_cm = Number(chest);
+      else delete payload.chest_size_cm;
+      if (!payload.teeth) delete payload.teeth;
+      onSubmit(payload);
     }
   };
 
@@ -139,6 +145,28 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
         <option value="No">No</option>
         <option value="Yes">Yes</option>
       </select>
+    </div>
+  );
+
+  const teethSelect = (
+    <div>
+      <label className={labelClass}>Teeth</label>
+      <select value={formData.teeth ?? ''} onChange={(e) => handleChange('teeth', e.target.value)}
+        className={inputClass('teeth')}>
+        <option value="">Not recorded</option>
+        <option value="Intact">Intact</option>
+        <option value="Abnormal">Abnormal / missing</option>
+      </select>
+    </div>
+  );
+
+  const chestCmInput = (
+    <div>
+      <label className={labelClass}>Chest (cm)</label>
+      <input type="number" min={30} max={150} step={0.5} placeholder="e.g. 96"
+        value={formData.chest_size_cm ?? ''}
+        onChange={(e) => handleChange('chest_size_cm', e.target.value)}
+        className={inputClass('chest_size_cm')} />
     </div>
   );
 
@@ -356,6 +384,8 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
                     <option value="Normal">Normal</option><option value="Reduced">Reduced</option>
                   </select>
                 </div>
+                {teethSelect}
+                {chestCmInput}
               </div>
             )}
           </div>
@@ -485,6 +515,8 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
                           <option value="Normal">Normal</option><option value="Reduced">Reduced</option>
                         </select>
                       </div>
+                      {teethSelect}
+                      {chestCmInput}
                     </div>
                   )}
                 </div>

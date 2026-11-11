@@ -57,6 +57,8 @@ tsconfig.tsbuildinfo
 DATASET/
 data/raw/
 data/external/
+# Scratch / merged patient tables (real clinical data)
+data/temp/
 
 # Unrelated local tooling projects (not part of this repo)
 strix/

@@ -1,0 +1,80 @@
+{
+  "model_file": "tabular_real_v1.joblib",
+  "created_utc": "2026-11-11T06:38:19+00:00",
+  "n_patients": 80,
+  "n_features": 11,
+  "features": [
+    "Age",
+    "Gender_Male",
+    "Neck_Circumference_cm",
+    "Chest_Size_cm",
+    "Mouth_Opening_Fingers",
+    "Mallampati_Score",
+    "Mallampati_Unknown",
+    "TMD_cm",
+    "SMD_cm",
+    "Jaw_Movement_Inadequate",
+    "Teeth_Abnormal"
+  ],
+  "classes": [
+    "Easy",
+    "Moderate",
+    "Difficult"
+  ],
+  "class_counts": {
+    "Easy": 19,
+    "Moderate": 53,
+    "Difficult": 8
+  },
+  "target_definition": "Doctor's recorded decision in AI laryngoscopy2.xlsx. This is NOT a post-hoc intubation outcome.",
+  "model": "LogisticRegression(class_weight=balanced) + median imputer + standard scaler",
+  "why_this_model": "Random forest had higher accuracy (0.901) but Difficult recall 0.46; logistic regression recalls 0.95. Missing a difficult airway is the costly error.",
+  "cv": {
+    "scheme": "RepeatedStratifiedKFold(n_splits=5, n_repeats=10)",
+    "folds": 50,
+    "accuracy_mean": 0.854,
+    "accuracy_std": 0.092,
+    "balanced_accuracy_mean": 0.885,
+    "f1_macro_mean": 0.851,
+    "f1_macro_std": 0.11,
+    "recall_mean": {
+      "Easy": 0.857,
+      "Moderate": 0.837,
+      "Difficult": 0.96
+    },
+    "recall_std": {
+      "Easy": 0.227,
+      "Moderate": 0.119,
+      "Difficult": 0.169
+    },
+    "precision_mean": {
+      "Easy": 0.725,
+      "Moderate": 0.942,
+      "Difficult": 0.896
+    },
+    "confusion_matrix_single_pass": [
+      [
+        16,
+        3,
+        0
+      ],
+      [
+        7,
+        45,
+        1
+      ],
+      [
+        0,
+        1,
+        7
+      ]
+    ]
+  },
+  "data_hash": "sha256:6381d53e76bb3627",
+  "sklearn_version": "1.9.0",
+  "caveats": [
+    "80 patients only; prototype, not a clinical device.",
+    "Labels are the doctor's decision, so performance measures agreement with that decision.",
+    "Underlying data is not a random sample; do not report as clinical accuracy."
+  ]
+}

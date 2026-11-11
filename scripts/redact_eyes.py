@@ -39,7 +39,7 @@ import numpy as np
 from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_INPUT = ROOT / "data" / "raw" / "Image Dataset" / "AI Intubation_"
+DEFAULT_INPUT = ROOT / "data" / "raw" / "Image Dataset" / "AI Intubation"
 DEFAULT_OUTPUT = ROOT / "data" / "raw" / "redacted_images"
 DEFAULT_MODEL = Path.home() / ".cache" / "yolo-face" / "yolo26n-face.pt"
 

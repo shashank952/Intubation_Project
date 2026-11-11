@@ -3,6 +3,64 @@
 Notable changes to the Intubation_Project. Format follows
 [Keep a Changelog](https://keepachangelog.com/); entries grouped by date.
 
+## 2026-11-11 — Real-patient model, photo analysis endpoint, dashboard Photo tab
+
+### Data pipeline
+- Rebuilt the redacted image set from the corrected source folder
+  (`data/raw/Image Dataset/AI Intubation`): 337 photos, 333 auto-redacted,
+  4 reviewed manually; all 337 sit in `data/raw/redacted_images/`.
+- `scripts/build_image_mapping.py`: filename -> patient mapping
+  (`data/temp/image_mapping.csv`), a review workbook, and a thumbnail contact
+  sheet. 79 of 80 labelled patients have photos; P-0023 has none and the
+  P-0081/82 photos are left unmapped.
+- `scripts/merge_laryngoscopy_datasets.py` + `scripts/onehot_laryngoscopy.py`:
+  combined and one-hot workbooks with 80 unique patients
+  (19 Easy / 53 Moderate / 8 Difficult).
+- New analysis scripts: `train_tabular_baseline.py`, `feature_ablation.py`,
+  `fusion_baseline.py`, `extract_image_features.py`, `teeth_visibility_check.py`,
+  `train_final_tabular.py`.
+
+### Model
+- `checkpoints/tabular_real_v1.joblib` + `.json`: logistic regression on the 80
+  real patients (11 features), 5-fold x 10 CV - 0.854 accuracy, 0.885 balanced,
+  0.96 Difficult recall. Target is the doctor's recorded decision, not an
+  intubation outcome.
+- Measured: teeth adds +0.095 accuracy, beard adds nothing, and photo features
+  do not improve the model (fusion 0.818 vs 0.854 tabular-only), so images are
+  used for capture quality only.
+
+### Backend
+- `POST /api/images/analyze`: decodes the upload, redacts the eyes with the YOLO
+  face model, returns quality/geometry plus a redacted preview; never stores the
+  image and never returns a preview when no face is found.
+- `PREDICTION_MODEL` (`real` | `synthetic`, default `real`). `/api/predictions`
+  now serves the real model and returns `model_used` + `imputed_features`.
+- `real_model_input.py`: explicit form -> feature mapping (15 mm per finger for
+  mouth opening; teeth and chest are optional and median-imputed when absent).
+- `PredictionInput` gains optional `teeth` and `chest_size_cm`.
+- `requirements.txt`: `ultralytics>=8.4.0`, because image analysis is now on the
+  served path.
+
+### Frontend
+- Dashboard tabs: **Assessment** / **Photo**. The upload card moved into the
+  Photo tab with an optional patient ID field and a panel describing what the
+  check does and does not do. Tabs are hidden with CSS rather than unmounted, so
+  a half-filled assessment survives a tab switch.
+- Patient form: teeth select and chest (cm) input in the advanced section.
+- New `/images` page with a sidebar **Images** entry next to Patient Records: a
+  large drag-and-drop area that accepts multiple JPEG/PNG files, checks them one
+  at a time and shows a per-photo result card (redacted preview, usability,
+  issues). Optional patient ID is applied to the batch's audit log.
+
+### Tests
+- `tests/test_image_analysis.py` (11) and `tests/test_real_model_input.py` (10);
+  backend suite now 94 tests.
+
+### Deployment notes
+- `yolo26n-face.pt` is not in the repo or the image. Set `FACE_MODEL_PATH` and
+  provision the weights, otherwise `/api/images/analyze` returns 503.
+- `render.yaml` gains `PREDICTION_MODEL`, `REAL_MODEL_PATH` and `FACE_MODEL_PATH`.
+
 ## 2026-10-20 — Neo-brutalist loading system
 
 - New `frontend/src/components/NeoLoader.tsx` with `inline` / `block` / `page`

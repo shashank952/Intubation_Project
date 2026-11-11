@@ -1,6 +1,6 @@
 # Production Readiness — Gap Analysis & Status
 
-_Last updated: 2026-10-20 (branch `dashboard-redesign`)._
+_Last updated: 2026-11-11 (real-data model + photo upload)._
 This is the working checklist for taking the Intubation_Project to production.
 Status legend: ✅ done · 🔶 partial · ⛔ blocked (needs labeled real data) · ❌ not started.
 
@@ -15,8 +15,11 @@ Status legend: ✅ done · 🔶 partial · ⛔ blocked (needs labeled real data)
 | Softmax temperature configurable | ✅ | `MODEL_SOFTMAX_TEMPERATURE` (default 5.0 — calibration debt) |
 | Model trained/validated on REAL labeled data | ⛔ | Current `tabular_best.pt` is synthetic-trained (0.859/0.970 on synthetic test). **Top production blocker.** Needs the labeled real dataset (collection in progress) |
 | Calibration (Platt/temperature) on real held-out data | ⛔ | Blocked on real data |
-| Labeled image manifest (image → patient → label) | ⛔ | 343 photos in `data/raw/Image Dataset/`, no labels yet (user collecting) |
+| Labeled image manifest (image → patient → label) | 🔶 | `data/temp/image_mapping.csv`: 79/80 labelled patients mapped (313 photos). Labels are the doctor's decision, not intubation outcomes |
 | Multimodal model trained + wired | ⛔ | Encoder/fusion code unexercised; trainer drops categoricals (`trainer.py:61,95`) |
+| Real-data model served (`PREDICTION_MODEL=real`) | ✅ | `checkpoints/tabular_real_v1.joblib` on 80 real patients: 0.854 accuracy / 0.885 balanced / 0.96 Difficult recall (doctor's-decision target) |
+| Photo upload endpoint (`/api/images/analyze`) | ✅ | Server-side eye redaction, quality + geometry, redacted preview, no storage, no preview when no face is found |
+| Photo features improve the model | ❌ | Measured: fusion 0.818 vs 0.854 tabular-only. Images are used for capture quality only |
 | Drift/monitoring of input & output distributions | ❌ | Future: log prediction distribution, alert on shift |
 | ONNX export fixed | ❌ | `export.py` dummy shapes wrong (1×20 + empty cats) |
 
@@ -96,7 +99,7 @@ Status legend: ✅ done · 🔶 partial · ⛔ blocked (needs labeled real data)
 
 ## Explicitly deferred (data-blocked)
 
-- Image dataset work (labels pending — user collecting): manifest generator,
-  dedup, orientation normalization, image encoder training.
+- Image dataset work: manifest generator and de-duplication are done; image encoder
+  training stays deferred because photo features showed no signal.
 - Multimodal fusion training pipeline.
 - Real-data model validation + calibration.

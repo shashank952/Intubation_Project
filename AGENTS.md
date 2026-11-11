@@ -67,7 +67,8 @@ No Makefile, no `pyproject.toml`, no pre-commit hooks.
 - `model_loader.py` — **fail-fast** checkpoint loading (strict state_dict), model version (sha256:8) on every prediction
 - `logging_config.py` — JSON-per-line log formatter
 - `llm_assistant.py` — LLM prompt engineering + fallback clinical text
-- `routers/{auth,llm,patients,predictions}.py` — `/api/auth/login|logout|heartbeat|me`, etc.
+- `routers/{auth,llm,patients,predictions,images}.py` — `/api/auth/login|logout|heartbeat|me`, `/api/images/analyze`, etc.
+- `image_analysis.py` — in-memory upload check: redacts eyes with the YOLO face model, returns quality + geometry + a redacted preview; never stores the image and never returns a preview when no face was found. `real_model.py` loads `checkpoints/tabular_real_v1.joblib` (the 80-patient real-data model, separate from the synthetic TabTransformer).
 - `schemas.py` — Pydantic input/output models with bounds + patient_id charset
 - `export.py` — ONNX export (STALE — wrong dummy shapes, see gotchas)
 - `Dockerfile.api` — API image (root build context)

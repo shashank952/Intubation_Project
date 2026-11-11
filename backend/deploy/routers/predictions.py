@@ -15,8 +15,11 @@ from bson.errors import InvalidId
 from ..database import get_db, audit_log
 from ..auth import get_current_user, require_role, is_admin
 from ..schemas import PredictionInput, PredictionOut, LLMReportOut
+from ..config import settings
 from ..model_loader import predict_tabular
-from ..llm_assistant import generate_clinical_summary, generate_recommendations
+from .. import real_model
+from ..real_model_input import to_model_features
+from ..llm_assistant import generate_reports
 from backend.data.preprocessing import CATEGORICAL_COLS, NUMERICAL_COLS
 
 router = APIRouter(prefix="/api/predictions", tags=["predictions"])
@@ -136,10 +139,15 @@ async def run_prediction(
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    numerical, categorical = _prepare_input(data)
-    # torch inference is CPU-bound — run off the event loop so concurrent
-    # requests don't stall behind one prediction
-    result = await asyncio.to_thread(predict_tabular, numerical, categorical)
+    imputed_features: list[str] = []
+    if settings.prediction_model == "real":
+        features, imputed_features = to_model_features(data)
+        result = await asyncio.to_thread(real_model.predict, features)
+    else:
+        numerical, categorical = _prepare_input(data)
+        # torch inference is CPU-bound — run off the event loop so concurrent
+        # requests don't stall behind one prediction
+        result = await asyncio.to_thread(predict_tabular, numerical, categorical)
 
     prob_score = result["probabilities"]
     weighted = (0 * prob_score.get("Easy", 0) + 50 * prob_score.get("Moderate", 0) + 100 * prob_score.get("Difficult", 0))
@@ -153,6 +161,8 @@ async def run_prediction(
         "probabilities": result["probabilities"],
         "risk_score": risk_score,
         "model_version": result.get("model_version"),
+        "model_used": settings.prediction_model,
+        "imputed_features": imputed_features,
         "created_at": datetime.now(timezone.utc),
     }
     insert_result = await db.predictions.insert_one(pred_doc)
@@ -160,13 +170,8 @@ async def run_prediction(
     pred_doc.pop("_id", None)
 
     patient_data = data.model_dump()
-    summary, summary_source = await asyncio.to_thread(
-        generate_clinical_summary,
-        result["prediction"], result["confidence"], result["probabilities"], patient_data,
-    )
-    recommendations, recommendations_source = await asyncio.to_thread(
-        generate_recommendations,
-        result["prediction"], result["confidence"], result["probabilities"], patient_data,
+    summary, summary_source, recommendations, recommendations_source = await generate_reports(
+        result["prediction"], result["confidence"], result["probabilities"], patient_data
     )
 
     llm_doc = {
@@ -191,6 +196,8 @@ async def run_prediction(
             "summary": summary_source,
             "recommendations": recommendations_source,
         },
+        "model_used": settings.prediction_model,
+        "imputed_features": imputed_features,
     }
 
 
