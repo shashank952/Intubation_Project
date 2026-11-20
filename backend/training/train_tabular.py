@@ -24,6 +24,7 @@ EPOCHS = 100
 PATIENCE = 15
 LR = 1e-3
 WEIGHT_DECAY = 1e-4
+LABEL_SMOOTHING = 0.1  # prevents overconfident logits that collapse into a bimodal Easy/Difficult split
 
 CATEGORICAL_COLS = [
     "Gender", "Previous_Airway_Records",
@@ -214,7 +215,7 @@ def main():
         [len(train_df) / (len(class_counts) * class_counts[i]) for i in range(len(class_counts))],
         dtype=torch.float32
     ).to(DEVICE)
-    loss_fn = nn.CrossEntropyLoss(weight=weight)
+    loss_fn = nn.CrossEntropyLoss(weight=weight, label_smoothing=LABEL_SMOOTHING)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=5, factor=0.5)
 

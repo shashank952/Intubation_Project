@@ -43,7 +43,7 @@ def get_model() -> nn.Module:
 
 def predict_tabular(numerical: torch.Tensor, categorical: list) -> dict:
     model = get_model()
-    temperature = 5.0  # soften extreme logits from synthetic-data training
+    temperature = 1.0  # label smoothing keeps logits calibrated; no extra scaling needed
     with torch.no_grad():
         logits = model(numerical.to(_device), [c.to(_device) for c in categorical])
         probs = torch.softmax(logits / temperature, dim=-1)
