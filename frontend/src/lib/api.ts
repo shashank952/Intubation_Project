@@ -9,6 +9,7 @@ import type {
   ImageAnalysis,
   NdmsResult,
   NdmsViewKey,
+  PatientImages,
 } from '@/types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -243,6 +244,44 @@ export async function runPrediction(
     body: JSON.stringify(data),
     signal,
   });
+}
+
+/**
+ * Run one assessment from the patient entry: tabular fields plus up to four
+ * view-tagged photos in a single request. The server returns one blended risk
+ * score (tabular + image contribution).
+ */
+export async function runPredictionWithImages(
+  data: PredictionInput,
+  images: PatientImages,
+  signal?: AbortSignal
+): Promise<PredictionResponse> {
+  const token = getToken();
+  const form = new FormData();
+  form.append('data', JSON.stringify(data));
+  (Object.keys(images) as NdmsViewKey[]).forEach((view) => {
+    const file = images[view];
+    if (file) form.append(view, file);
+  });
+
+  const response = await fetch(`${BASE_URL}/api/predictions/with-images`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: form,
+    signal,
+  });
+
+  if (!response.ok) {
+    let message = `Assessment failed: ${response.status}`;
+    try {
+      message = formatApiError(await response.json()) || message;
+    } catch {
+      // keep the status-based message
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
 }
 
 export async function checkLlmStatus(): Promise<LlmStatus> {

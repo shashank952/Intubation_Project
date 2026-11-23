@@ -9,8 +9,8 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { createPatient, runPrediction } from '@/lib/api';
-import type { PredictionInput, PredictionResponse } from '@/types';
+import { createPatient, runPrediction, runPredictionWithImages } from '@/lib/api';
+import type { PredictionInput, PredictionResponse, PatientImages } from '@/types';
 
 export type PredictionStatus = 'idle' | 'running' | 'done' | 'error';
 
@@ -20,7 +20,7 @@ interface PredictionContextValue {
   predictionResult: PredictionResponse | null;
   error: string;
   elapsedSeconds: number;
-  startAssessment: (data: PredictionInput) => void;
+  startAssessment: (data: PredictionInput, images?: PatientImages) => void;
   clearAssessment: () => void;
   dismissError: () => void;
 }
@@ -110,7 +110,7 @@ export function PredictionProvider({ children }: { children: ReactNode }) {
     setStatus((s) => (s === 'error' ? 'idle' : s));
   }, []);
 
-  const startAssessment = useCallback((data: PredictionInput) => {
+  const startAssessment = useCallback((data: PredictionInput, images?: PatientImages) => {
     if (runningRef.current) return;
 
     runningRef.current = true;
@@ -143,7 +143,10 @@ export function PredictionProvider({ children }: { children: ReactNode }) {
         } catch {
           /* patient may already exist — non-fatal */
         }
-        const result = await runPrediction(data, controller.signal);
+        const result =
+          images && Object.keys(images).length > 0
+            ? await runPredictionWithImages(data, images, controller.signal)
+            : await runPrediction(data, controller.signal);
         setPredictionResult(result);
         setStatus('done');
       } catch (err) {

@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
-import { Activity, User, Stethoscope, ClipboardList, AlertCircle, Info, FlaskConical, Shuffle, ChevronDown, History } from 'lucide-react';
-import type { PredictionInput } from '@/types';
+import { Activity, User, Stethoscope, ClipboardList, AlertCircle, Info, FlaskConical, Shuffle, ChevronDown, History, Camera } from 'lucide-react';
+import type { PredictionInput, PatientImages } from '@/types';
 import clsx from 'clsx';
 import NeoLoader from '@/components/NeoLoader';
+import PatientImagesField from '@/components/PatientImagesField';
 
 interface PatientFormProps {
-  onSubmit: (data: PredictionInput) => void;
+  onSubmit: (data: PredictionInput, images: PatientImages) => void;
   loading: boolean;
   initialData?: PredictionInput | null;
   compact?: boolean;
@@ -50,12 +51,14 @@ const defaultFormData: PredictionInput = {
 
 export default function PatientForm({ onSubmit, loading, initialData, compact }: PatientFormProps) {
   const [formData, setFormData] = useState<PredictionInput>(defaultFormData);
+  const [images, setImages] = useState<PatientImages>({});
   const [errors, setErrors] = useState<FormErrors>({});
   const [activeSection, setActiveSection] = useState('demographics');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     setFormData(initialData ? { ...initialData } : { ...defaultFormData });
+    setImages({});
     setErrors({});
     setActiveSection('demographics');
     setShowAdvanced(false);
@@ -100,7 +103,7 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
       if (chest !== '') payload.chest_size_cm = Number(chest);
       else delete payload.chest_size_cm;
       if (!payload.teeth) delete payload.teeth;
-      onSubmit(payload);
+      onSubmit(payload, images);
     }
   };
 
@@ -257,6 +260,7 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
             {sectionTab('airway', 'Airway', Stethoscope)}
             {sectionTab('physical', 'Physical', ClipboardList)}
             {sectionTab('history', 'History', History)}
+            {sectionTab('image', 'Image', Camera)}
           </div>
         </div>
       )}
@@ -538,6 +542,11 @@ export default function PatientForm({ onSubmit, loading, initialData, compact }:
                   {yesNoSelect('injury_previous_neck_fracture', 'Previous Neck Fracture')}
                   {yesNoSelect('previous_emergencies_icu', 'Previous Emergencies/ICU')}
                 </div>
+              </div>
+            )}
+            {activeSection === 'image' && (
+              <div className="space-y-4">
+                <PatientImagesField value={images} onChange={setImages} />
               </div>
             )}
           </>

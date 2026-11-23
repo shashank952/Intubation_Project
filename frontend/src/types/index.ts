@@ -59,11 +59,19 @@ export interface PredictionInput {
   chest_size_cm?: number;
 }
 
+export type PatientImageView = NdmsViewKey;
+export type PatientImages = Partial<Record<NdmsViewKey, File>>;
+
 export interface PredictionResult {
   prediction: string;
   confidence: number;
   risk_score: number;
   probabilities: Record<string, number>;
+  base_risk_score?: number | null;
+  ndms_score?: number | null;
+  ndms_confidence?: number | null;
+  image_contribution?: number | null;
+  image_views_used?: string[] | null;
 }
 
 export interface PredictionResponse {
@@ -81,6 +89,11 @@ export interface PredictionHistory {
   risk_score: number;
   probabilities: Record<string, number>;
   created_at: string;
+  base_risk_score?: number | null;
+  ndms_score?: number | null;
+  ndms_confidence?: number | null;
+  image_contribution?: number | null;
+  image_views_used?: string[] | null;
 }
 
 export interface LLMReport {

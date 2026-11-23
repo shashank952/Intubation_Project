@@ -149,6 +149,11 @@ class PredictionOut(BaseModel):
     confidence: float
     probabilities: dict
     risk_score: float
+    base_risk_score: Optional[float] = None
+    ndms_score: Optional[float] = None
+    ndms_confidence: Optional[float] = None
+    image_contribution: Optional[float] = None
+    image_views_used: Optional[List[str]] = None
     model_version: Optional[str] = None
     created_at: datetime
 

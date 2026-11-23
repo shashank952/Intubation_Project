@@ -8,6 +8,7 @@ interface RiskPredictionCardProps {
   prediction: string;
   confidence: number;
   probabilities: Record<string, number>;
+  imageContribution?: number | null;
 }
 
 const RADIUS = 52;
@@ -19,6 +20,7 @@ export default function RiskPredictionCard({
   prediction,
   confidence,
   probabilities,
+  imageContribution,
 }: RiskPredictionCardProps) {
   const p = prediction?.toLowerCase() || '';
   const score = Math.min(100, Math.max(0, riskScore * 100));
@@ -145,6 +147,14 @@ export default function RiskPredictionCard({
               {colorClasses.label}
             </p>
           </div>
+
+          {imageContribution != null && (
+            <p className="text-center text-[10px] font-medium text-neutral-400 dark:text-neutral-500">
+              {imageContribution > 0
+                ? `Includes +${imageContribution.toFixed(1)} risk points from images (NDMS)`
+                : 'Images added no extra risk'}
+            </p>
+          )}
 
           {/* Confidence bar */}
           <div>

@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, File, Form, UploadFile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timezone
 from collections import defaultdict
 import asyncio
@@ -17,7 +17,7 @@ from ..auth import get_current_user, require_role, is_admin
 from ..schemas import PredictionInput, PredictionOut, LLMReportOut
 from ..config import settings
 from ..model_loader import predict_tabular
-from .. import real_model
+from .. import real_model, image_analysis
 from ..real_model_input import to_model_features
 from ..llm_assistant import generate_reports
 from backend.data.preprocessing import CATEGORICAL_COLS, NUMERICAL_COLS
@@ -29,6 +29,9 @@ _scaler = None
 _PRED_WINDOW_SECONDS = 60
 _MAX_PREDS_PER_WINDOW = 10
 _pred_timestamps: dict = defaultdict(list)
+
+_MAX_IMAGE_BYTES = 8 * 1024 * 1024
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/jpg", "image/png"}
 
 
 def _owner_query(user: dict) -> dict:
@@ -129,10 +132,11 @@ def _prepare_input(data: PredictionInput):
     return numerical, categorical
 
 
-@router.post("")
-async def run_prediction(
-    data: PredictionInput, user: dict = Depends(require_role("doctor"))
-):
+async def _predict_core(
+    data: PredictionInput,
+    user: dict,
+    image_results: Optional[dict] = None,
+) -> dict:
     _enforce_prediction_rate_limit(user)
     db = get_db()
     patient = await db.patients.find_one({"patient_id": data.patient_id, **_owner_query(user)})
@@ -151,7 +155,23 @@ async def run_prediction(
 
     prob_score = result["probabilities"]
     weighted = (0 * prob_score.get("Easy", 0) + 50 * prob_score.get("Moderate", 0) + 100 * prob_score.get("Difficult", 0))
-    risk_score = round(weighted / 100, 3)
+    base_risk = round(weighted / 100, 3)
+
+    risk_score = base_risk
+    image_fields: dict = {}
+    if image_results:
+        ndms = image_analysis.compute_ndms(image_results)
+        contribution = ndms.get("risk_contribution")
+        if contribution is not None:
+            blended_pct = image_analysis.blend_risk(round(base_risk * 100, 1), contribution)
+            if blended_pct is not None:
+                risk_score = round(blended_pct / 100.0, 3)
+        image_fields = {
+            "ndms_score": ndms.get("score"),
+            "ndms_confidence": ndms.get("confidence"),
+            "image_contribution": contribution,
+            "image_views_used": ndms.get("views_used") or [],
+        }
 
     pred_doc = {
         "patient_id": data.patient_id,
@@ -160,9 +180,11 @@ async def run_prediction(
         "confidence": result["confidence"],
         "probabilities": result["probabilities"],
         "risk_score": risk_score,
+        "base_risk_score": base_risk,
         "model_version": result.get("model_version"),
         "model_used": settings.prediction_model,
         "imputed_features": imputed_features,
+        **image_fields,
         "created_at": datetime.now(timezone.utc),
     }
     insert_result = await db.predictions.insert_one(pred_doc)
@@ -198,7 +220,53 @@ async def run_prediction(
         },
         "model_used": settings.prediction_model,
         "imputed_features": imputed_features,
+        "image": image_fields or None,
     }
+
+
+@router.post("")
+async def run_prediction(
+    data: PredictionInput, user: dict = Depends(require_role("doctor"))
+):
+    return await _predict_core(data, user)
+
+
+@router.post("/with-images")
+async def run_prediction_with_images(
+    data: str = Form(...),
+    frontal: Optional[UploadFile] = File(None),
+    teeth: Optional[UploadFile] = File(None),
+    tongue: Optional[UploadFile] = File(None),
+    jawline: Optional[UploadFile] = File(None),
+    user: dict = Depends(require_role("doctor")),
+):
+    try:
+        payload = PredictionInput.model_validate_json(data)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid prediction payload: {exc}") from exc
+
+    uploads = {"frontal": frontal, "teeth": teeth, "tongue": tongue, "jawline": jawline}
+    has_images = any(upload is not None for upload in uploads.values())
+    results: dict = {}
+    for view, upload in uploads.items():
+        if upload is None:
+            results[view] = None
+            continue
+        if upload.content_type not in _ALLOWED_IMAGE_TYPES:
+            raise HTTPException(status_code=415, detail="Only JPEG or PNG images are accepted.")
+        contents = await upload.read(_MAX_IMAGE_BYTES + 1)
+        if not contents:
+            raise HTTPException(status_code=400, detail=f"Empty upload for {view}.")
+        if len(contents) > _MAX_IMAGE_BYTES:
+            raise HTTPException(status_code=413, detail="Image exceeds the 8 MB limit.")
+        try:
+            results[view] = await asyncio.to_thread(image_analysis.analyze, contents, view)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail="Image analysis is unavailable.") from exc
+
+    return await _predict_core(payload, user, image_results=results if has_images else None)
 
 
 _MAX_LIST_LIMIT = 200

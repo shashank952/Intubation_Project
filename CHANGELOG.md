@@ -3,6 +3,16 @@
 Notable changes to the Intubation_Project. Format follows
 [Keep a Changelog](https://keepachangelog.com/); entries grouped by date.
 
+## 2026-11-23 — Images folded into Patient Entry (single risk score)
+
+### Backend
+- `POST /api/predictions/with-images`: one multipart request carrying the tabular payload plus up to four view photos. It runs the tabular model and NDMS together and stores one blended `risk_score`, keeping `base_risk_score`, `ndms_score`, `image_contribution` and `image_views_used` for provenance. The plain JSON `POST /api/predictions` is unchanged for the mobile app.
+- `PredictionOut` exposes the new optional fields so history shows the blended score.
+
+### Frontend
+- The separate top-level "Image" tab is gone. Patient Entry now has a fifth internal tab (**Image**) beside History that captures the four views; pressing **Assess Patient** submits measurements + images once.
+- The risk card shows the single blended score and notes the image contribution when present.
+
 ## 2026-11-23 — Image NDMS panel (4-view morphometric score)
 
 ### Backend
