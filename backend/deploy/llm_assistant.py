@@ -37,6 +37,14 @@ def report_deadline() -> float:
     return time.monotonic() + settings.llm_report_budget_seconds
 
 
+def _extra_body() -> dict:
+    # Reasoning models spend the whole token budget thinking and return empty
+    # content, so ask OpenRouter to skip it. Other providers reject the field.
+    if "openrouter" in settings.llm_api_url.lower():
+        return {"reasoning": {"enabled": False}}
+    return {}
+
+
 def _is_feasible(text: str) -> bool:
     stripped = text.strip()
     return len(stripped) >= 15
@@ -78,8 +86,12 @@ def _call_llm(
                 temperature=settings.llm_temperature,
                 max_tokens=settings.llm_max_tokens,
                 timeout=attempt_timeout,
+                extra_body=_extra_body(),
             )
-            text = resp.choices[0].message.content
+            choices = getattr(resp, "choices", None)
+            choice = choices[0] if choices else None
+            raw = choice.message.content if choice else None
+            text = raw or ""
             if text and _is_feasible(text):
                 logger.info(
                     "LLM ok in %.2fs (attempt %d/%d)",
@@ -88,7 +100,12 @@ def _call_llm(
                     settings.llm_retries + 1,
                 )
                 return text.strip()
-            last_err = RuntimeError("empty or non-feasible LLM response")
+            last_err = RuntimeError(
+                f"empty or non-feasible LLM response "
+                f"(finish_reason={getattr(choice, 'finish_reason', None)})"
+                if choices
+                else "LLM response contained no choices"
+            )
             logger.warning("LLM attempt %d: %s", attempt + 1, last_err)
         except Exception as e:
             last_err = e

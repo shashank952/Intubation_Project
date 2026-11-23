@@ -35,15 +35,15 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "qwen/qwen-2.5-72b-instruct"
     llm_temperature: float = 0.3
-    llm_max_tokens: int = 512
+    llm_max_tokens: int = 1024
     # Per-HTTP-attempt timeout. The OpenAI SDK's own retries are disabled so
     # this is the only per-attempt bound.
-    llm_timeout: float = 12.0
+    llm_timeout: float = 20.0
     llm_retries: int = 1
     # Hard wall-clock cap for the whole summary+recommendations step. Exceeding
     # it returns canned fallback text instead of hanging the prediction request.
     # Must stay comfortably below the clients' abort timeout (240s).
-    llm_report_budget_seconds: float = 18.0
+    llm_report_budget_seconds: float = 40.0
     llm_external_enabled: bool = True
 
     model_checkpoint: str = "checkpoints/tabular_best.pt"
