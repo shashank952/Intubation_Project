@@ -74,6 +74,9 @@ def default_model_path() -> Path:
     override = os.getenv("FACE_MODEL_PATH")
     if override:
         return Path(override)
+    bundled = Path(__file__).resolve().parents[2] / "checkpoints" / "yolo26n-face.pt"
+    if bundled.exists():
+        return bundled
     return Path.home() / ".cache" / "yolo-face" / "yolo26n-face.pt"
 
 
