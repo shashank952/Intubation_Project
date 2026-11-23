@@ -107,6 +107,12 @@ def predict(features: dict) -> dict:
             values.append(float(raw))
 
     vector = np.array([values], dtype=float)
+    # Models pickled by an older scikit-learn do not carry `multi_class`, while
+    # a newer predict_proba still reads it. Restore the training default so the
+    # artifact stays loadable across scikit-learn versions.
+    estimator = pipeline.steps[-1][1] if hasattr(pipeline, "steps") else pipeline
+    if not hasattr(estimator, "multi_class"):
+        estimator.multi_class = "auto"
     probabilities = pipeline.predict_proba(vector)[0]
     index = int(np.argmax(probabilities))
 
