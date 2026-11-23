@@ -72,6 +72,8 @@ TONGUE_VALUE_MIN = 50.0
 _model = None
 _model_lock = threading.Lock()
 
+cv2.setNumThreads(1)
+
 
 def default_model_path() -> Path:
     override = os.getenv("FACE_MODEL_PATH")
@@ -114,7 +116,10 @@ def decode(raw: bytes) -> np.ndarray:
         raise ValueError("Empty upload")
     try:
         with Image.open(io.BytesIO(raw)) as image:
+            image.draft("RGB", (DETECT_MAX_SIDE, DETECT_MAX_SIDE))
             upright = ImageOps.exif_transpose(image).convert("RGB")
+            if max(upright.size) > DETECT_MAX_SIDE:
+                upright.thumbnail((DETECT_MAX_SIDE, DETECT_MAX_SIDE))
             array = np.array(upright)
     except Exception as exc:  # PIL raises several unrelated exception types
         raise ValueError(f"Not a decodable image: {exc.__class__.__name__}") from exc
