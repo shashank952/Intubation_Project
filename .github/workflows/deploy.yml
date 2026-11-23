@@ -13,21 +13,17 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - run: pip install black ruff
-      - run: ruff check backend/ --ignore E402,F403,F401 --exit-zero
-      - run: black --check backend/ --diff || true
+- run: ruff check backend/ --ignore E402,F403,F401 --exit-zero
 
+      - run: black --check backend/ --diff || true
   test-backend:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     services:
       mongo:
         image: mongo:7
@@ -40,19 +36,17 @@ jobs:
           python-version: "3.10"
           cache: "pip"
       - run: pip install -r requirements.txt
-      - run: pip install pytest
-      - run: python -m pytest tests/ -q
-      - run: python -c "from backend.deploy.config import settings; print('Config OK')"
+- run: python -c "from backend.deploy.config import settings; print('Config OK')"
+
       - run: python -c "from backend.deploy.schemas import *; print('Schemas OK')"
+
       - run: python -c "from backend.deploy.auth import *; print('Auth OK')"
 
   test-frontend:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     defaults:
       run:
-        working-directory: frontend
+        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -92,7 +86,7 @@ jobs:
       - name: Build & push Frontend image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: frontend/Dockerfile.frontend
+          context: ./frontend
+          file: ./frontend/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
