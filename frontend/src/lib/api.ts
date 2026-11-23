@@ -7,6 +7,8 @@ import type {
   LLMReport,
   LlmStatus,
   ImageAnalysis,
+  NdmsResult,
+  NdmsViewKey,
 } from '@/types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -304,6 +306,44 @@ export async function analyzeImage(file: File, patientId?: string): Promise<Imag
 
   if (!response.ok) {
     let message = `Image analysis failed: ${response.status}`;
+    try {
+      message = formatApiError(await response.json()) || message;
+    } catch {
+      // keep the status-based message
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Upload 1-4 view-tagged photos and get an NDMS morphometric score.
+ * Only the provided views are sent; the server redacts every photo and never
+ * stores it. `baseRisk` (0-100) is optional and lets the server return a
+ * blended risk when the score can be computed.
+ */
+export async function analyzeNdms(
+  files: Partial<Record<NdmsViewKey, File>>,
+  options: { patientId?: string; baseRisk?: number | null } = {}
+): Promise<NdmsResult> {
+  const token = getToken();
+  const form = new FormData();
+  (Object.keys(files) as NdmsViewKey[]).forEach((view) => {
+    const file = files[view];
+    if (file) form.append(view, file);
+  });
+  if (options.patientId) form.append('patient_id', options.patientId);
+  if (options.baseRisk != null) form.append('base_risk', String(options.baseRisk));
+
+  const response = await fetch(`${BASE_URL}/api/images/ndms`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: form,
+  });
+
+  if (!response.ok) {
+    let message = `NDMS analysis failed: ${response.status}`;
     try {
       message = formatApiError(await response.json()) || message;
     } catch {

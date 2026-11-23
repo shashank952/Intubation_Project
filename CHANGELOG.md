@@ -3,6 +3,16 @@
 Notable changes to the Intubation_Project. Format follows
 [Keep a Changelog](https://keepachangelog.com/); entries grouped by date.
 
+## 2026-11-23 — Image NDMS panel (4-view morphometric score)
+
+### Backend
+- `POST /api/images/ndms`: accepts up to four view-tagged photos (`frontal`, `teeth`, `tongue`, `jawline`), reuses the existing in-memory redaction/quality pipeline, and returns per-view quality/geometry plus an NDMS score.
+- `backend/deploy/image_analysis.py`: new view proxies (teeth/tongue colour statistics, jawline aspect + submental brightness) and pure `compute_ndms()` / `blend_risk()` helpers, unit-tested in `tests/test_ndms.py`.
+- NDMS is 0–1 (0 favourable, 1 unfavourable), requires at least two usable components, and contributes a capped **+0 to +5** points to the tabular risk. It never lowers the risk and is labelled non-validated — photo features did not validate against the difficulty label on this dataset.
+
+### Frontend
+- Dashboard "Photo" tab renamed **Image**; new `ImageAnalysisPanel` with four fixed drag-and-drop slots (Frontal, Teeth & Lip-bite, Tongue out, Side & Jawline), redacted previews, an NDMS gauge, component bars, confidence, and the image risk contribution / combined risk.
+
 ## 2026-11-20 — Fix bimodal risk scores (label smoothing + calibrated temperature)
 
 ### Backend / ML

@@ -133,3 +133,35 @@ export interface ImageAnalysis {
   preview_data_uri: string | null;
   warnings: string[];
 }
+
+export type NdmsViewKey = 'frontal' | 'teeth' | 'tongue' | 'jawline';
+
+export interface NdmsComponent {
+  name: string;
+  value: number;
+  weight: number;
+  note: string;
+}
+
+export interface NdmsViewResult {
+  status: string;
+  usable: boolean;
+  issues: string[];
+  quality: ImageQuality;
+  geometry: ImageGeometry | null;
+  preview_data_uri: string | null;
+  view_metrics: Record<string, number | null>;
+}
+
+export interface NdmsResult {
+  score: number | null;
+  confidence: number;
+  views_used: string[];
+  missing_views: string[];
+  components: NdmsComponent[];
+  risk_contribution: number | null;
+  blended_risk: number | null;
+  max_contribution: number;
+  views: Record<NdmsViewKey, NdmsViewResult | null>;
+  note: string;
+}

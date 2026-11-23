@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
-from typing import Optional, List
+from typing import Dict, List, Optional
 from datetime import datetime
 from enum import Enum
 
@@ -195,3 +195,40 @@ class ImageAnalyzeOut(BaseModel):
     auto_fill_note: str
     preview_data_uri: Optional[str] = None
     warnings: List[str] = Field(default_factory=list)
+
+
+class ImageViewResultOut(BaseModel):
+    status: str
+    usable: bool
+    issues: List[str] = Field(default_factory=list)
+    quality: ImageQualityOut
+    geometry: Optional[ImageGeometryOut] = None
+    preview_data_uri: Optional[str] = None
+    view_metrics: Dict[str, Optional[float]] = Field(default_factory=dict)
+
+
+class NdmsViewsOut(BaseModel):
+    frontal: Optional[ImageViewResultOut] = None
+    teeth: Optional[ImageViewResultOut] = None
+    tongue: Optional[ImageViewResultOut] = None
+    jawline: Optional[ImageViewResultOut] = None
+
+
+class NdmsComponentOut(BaseModel):
+    name: str
+    value: float
+    weight: float
+    note: str
+
+
+class ImageNdmsOut(BaseModel):
+    score: Optional[float] = None
+    confidence: float
+    views_used: List[str] = Field(default_factory=list)
+    missing_views: List[str] = Field(default_factory=list)
+    components: List[NdmsComponentOut] = Field(default_factory=list)
+    risk_contribution: Optional[float] = None
+    blended_risk: Optional[float] = None
+    max_contribution: float
+    views: NdmsViewsOut
+    note: str

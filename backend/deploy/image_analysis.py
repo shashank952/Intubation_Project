@@ -51,6 +51,22 @@ STRIP_PAD_X = 0.06
 FALLBACK_TOP = 0.28
 FALLBACK_BOTTOM = 0.52
 
+# NDMS (Normalized Difficulty Morphometric Score).
+# Per-component weights renormalize over whichever components are available.
+NDMS_WEIGHTS = {
+    "mouth_opening": 0.30,
+    "teeth_visibility": 0.20,
+    "tongue_protrusion": 0.30,
+    "jaw_neck": 0.20,
+}
+NDMS_MAX_CONTRIBUTION = 5.0
+NDMS_MIN_COMPONENTS = 2
+NDMS_VIEWS = ("frontal", "teeth", "tongue", "jawline")
+TEETH_MIN_VALUE = 140.0
+TEETH_MAX_SAT = 90.0
+TONGUE_SAT_MIN = 90.0
+TONGUE_VALUE_MIN = 50.0
+
 _model = None
 
 
@@ -252,6 +268,169 @@ def geometry(face: dict, bgr: np.ndarray) -> Optional[dict]:
     }
 
 
+# ---------------------------------------------------------------- view metrics
+
+
+def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
+    return max(low, min(high, value))
+
+
+def mouth_roi(bgr: np.ndarray, face: dict) -> Optional[tuple[np.ndarray, tuple[int, int, int, int], float]]:
+    """Return (roi, (left, right, top, bottom), face_height); mirrors geometry()'s ROI."""
+    keypoints = face.get("keypoints")
+    if not keypoints or len(keypoints) < 5:
+        return None
+    x1, y1, x2, y2 = face["box"]
+    face_h = max(1.0, y2 - y1)
+    mouth_a, mouth_b = keypoints[3], keypoints[4]
+    mouth_w = max(abs(mouth_b[0] - mouth_a[0]), abs(mouth_b[1] - mouth_a[1]), 1.0)
+    cx = (mouth_a[0] + mouth_b[0]) / 2.0
+    cy = (mouth_a[1] + mouth_b[1]) / 2.0
+    half_w = max(mouth_w * 0.75, 8.0)
+    left = int(max(0, cx - half_w))
+    right = int(min(bgr.shape[1], cx + half_w))
+    top = int(max(0, cy - 0.18 * face_h))
+    bottom = int(min(bgr.shape[0], cy + 0.22 * face_h))
+    if right - left < 4 or bottom - top < 4:
+        return None
+    return bgr[top:bottom, left:right], (left, right, top, bottom), face_h
+
+
+def view_metrics(bgr: np.ndarray, face: dict, view: str) -> dict:
+    """View-specific colour/geometry proxies. These are proxies, not clinical measurements."""
+    metrics: dict[str, Optional[float]] = {}
+    region = mouth_roi(bgr, face)
+
+    if region is not None and view in ("teeth", "tongue"):
+        roi = region[0]
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        hue, sat, val = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
+        if view == "teeth":
+            teeth = ((val >= TEETH_MIN_VALUE) & (sat <= TEETH_MAX_SAT)).mean()
+            metrics["teeth_visibility"] = round(float(teeth), 4)
+        else:
+            reddish = (((hue <= 10) | (hue >= 170)) & (sat >= TONGUE_SAT_MIN) & (val >= TONGUE_VALUE_MIN)).mean()
+            metrics["tongue_visibility"] = round(float(reddish), 4)
+
+    if view == "jawline":
+        x1, y1, x2, y2 = face["box"]
+        face_w = max(1.0, x2 - x1)
+        face_h = max(1.0, y2 - y1)
+        metrics["profile_aspect"] = round(face_h / face_w, 3)
+        if region is not None:
+            _, bounds, region_face_h = region
+            left, right, _, bottom = bounds
+            sub_top = min(bgr.shape[0] - 1, bottom)
+            sub_bottom = min(bgr.shape[0], bottom + int(0.25 * region_face_h))
+            if sub_bottom - sub_top >= 2 and right - left >= 2:
+                value = cv2.cvtColor(bgr[sub_top:sub_bottom, left:right], cv2.COLOR_BGR2HSV)[:, :, 2]
+                metrics["submental_brightness"] = round(float(value.mean()), 1)
+
+    return metrics
+
+
+# --------------------------------------------------------------------- scoring
+
+
+def compute_ndms(views: dict) -> dict:
+    """Combine per-view analyze() results into a bounded NDMS score.
+
+    Pure (no OpenCV/torch) so it can be unit-tested. ``views`` maps a view name
+    to an analyze() result dict, or None when the view was not uploaded.
+    """
+
+    def usable(name: str) -> Optional[dict]:
+        result = views.get(name)
+        if result and (result.get("quality") or {}).get("usable"):
+            return result
+        return None
+
+    def geom(result: Optional[dict]) -> dict:
+        return (result or {}).get("geometry") or {}
+
+    def metrics(result: Optional[dict]) -> dict:
+        return (result or {}).get("view_metrics") or {}
+
+    components: list[dict] = []
+
+    def add(name: str, value: Optional[float], note: str) -> None:
+        if value is None:
+            return
+        components.append(
+            {
+                "name": name,
+                "value": round(_clamp(float(value)), 3),
+                "weight": NDMS_WEIGHTS[name],
+                "note": note,
+            }
+        )
+
+    mouth_opening: Optional[float] = None
+    for name in ("teeth", "tongue", "frontal"):
+        result = usable(name)
+        extent = geom(result).get("mouth_open_extent") if result else None
+        if extent is not None:
+            mouth_opening = float(extent) / 0.5
+            break
+    add("mouth_opening", mouth_opening, "Open-mouth extent from the mouth-region darkness proxy.")
+
+    teeth = usable("teeth")
+    add(
+        "teeth_visibility",
+        metrics(teeth).get("teeth_visibility") if teeth else None,
+        "Bright, low-saturation pixels in the mouth region (teeth-like).",
+    )
+
+    tongue = usable("tongue")
+    add(
+        "tongue_protrusion",
+        metrics(tongue).get("tongue_visibility") if tongue else None,
+        "Reddish, saturated pixels in the mouth region (tongue-like).",
+    )
+
+    jaw = usable("jawline")
+    jaw_value: Optional[float] = None
+    if jaw:
+        jaw_metrics = metrics(jaw)
+        aspect = jaw_metrics.get("profile_aspect")
+        submental = jaw_metrics.get("submental_brightness")
+        if aspect is not None:
+            jaw_value = _clamp(1.0 - abs(float(aspect) - 1.35) / 0.6)
+        if submental is not None:
+            sub_value = _clamp((float(submental) - 30.0) / 120.0)
+            jaw_value = sub_value if jaw_value is None else 0.5 * jaw_value + 0.5 * sub_value
+    add("jaw_neck", jaw_value, "Low-confidence profile/jawline proxy (aspect ratio + submental brightness).")
+
+    usable_views = [name for name in NDMS_VIEWS if usable(name) is not None]
+    missing_views = [name for name in NDMS_VIEWS if name not in usable_views]
+    result: dict = {
+        "score": None,
+        "confidence": round(len(usable_views) / len(NDMS_VIEWS), 2),
+        "views_used": usable_views,
+        "missing_views": missing_views,
+        "components": components,
+        "risk_contribution": None,
+    }
+    if len(components) < NDMS_MIN_COMPONENTS:
+        return result
+
+    total_weight = sum(component["weight"] for component in components)
+    favorability = sum(component["value"] * component["weight"] for component in components) / total_weight
+    score = _clamp(1.0 - favorability)
+    # Conservative on purpose: photos may raise concern but must never lower the
+    # tabular risk, so the contribution is capped to [0, NDMS_MAX_CONTRIBUTION].
+    contribution = 0.0 if score <= 0.5 else NDMS_MAX_CONTRIBUTION * (score - 0.5) * 2.0
+    result["score"] = round(score, 3)
+    result["risk_contribution"] = round(min(NDMS_MAX_CONTRIBUTION, contribution), 1)
+    return result
+
+
+def blend_risk(base_risk: Optional[float], contribution: Optional[float]) -> Optional[float]:
+    if base_risk is None or contribution is None:
+        return None
+    return round(max(0.0, min(100.0, float(base_risk) + float(contribution))), 1)
+
+
 def preview_data_uri(bgr: np.ndarray, width: int = PREVIEW_WIDTH) -> str:
     height = max(1, int(bgr.shape[0] * width / bgr.shape[1]))
     resized = cv2.resize(bgr, (width, height))
@@ -264,8 +443,8 @@ def preview_data_uri(bgr: np.ndarray, width: int = PREVIEW_WIDTH) -> str:
 # ------------------------------------------------------------------- public
 
 
-def analyze(raw: bytes) -> dict:
-    """Analyze one upload. Returns a dict matching ImageAnalyzeOut."""
+def analyze(raw: bytes, view: Optional[str] = None) -> dict:
+    """Analyze one upload. Returns a dict matching ImageAnalyzeOut (plus view_metrics when view is set)."""
     bgr = decode(raw)
     bgr = _resize_for_work(bgr)
     height, width = bgr.shape[:2]
@@ -293,6 +472,7 @@ def analyze(raw: bytes) -> dict:
             "faces_redacted": 0,
             "quality": quality,
             "geometry": None,
+            "view_metrics": {},
             "auto_fill": {},
             "auto_fill_note": "No face detected, so no measurements were taken.",
             "preview_data_uri": None,
@@ -341,6 +521,7 @@ def analyze(raw: bytes) -> dict:
         "faces_redacted": faces_redacted,
         "quality": measures,
         "geometry": geom,
+        "view_metrics": view_metrics(bgr, primary, view) if view else {},
         "auto_fill": {},
         "auto_fill_note": (
             "No clinical field is auto-filled. On this dataset, photo geometry did not "

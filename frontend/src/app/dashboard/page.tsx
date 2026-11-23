@@ -11,7 +11,7 @@ import RiskPredictionCard from '@/components/RiskPredictionCard';
 import AiClinicalAssessment from '@/components/AiClinicalAssessment';
 import PatientForm from '@/components/PatientForm';
 import PatientHistory from '@/components/PatientHistory';
-import ImageUploadCard from '@/components/ImageUploadCard';
+import ImageAnalysisPanel from '@/components/ImageAnalysisPanel';
 import StatsCard from '@/components/StatsCard';
 import MiniHistory from '@/components/MiniHistory';
 
@@ -34,7 +34,7 @@ export default function DashboardPage() {
   const [llmStatus, setLlmStatus] = useState<'checking' | 'connected' | 'offline' | null>(null);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'easy' | 'moderate' | 'difficult'>('all');
   const [showForm, setShowForm] = useState(true);
-  const [activeTab, setActiveTab] = useState<'assessment' | 'photo'>('assessment');
+  const [activeTab, setActiveTab] = useState<'assessment' | 'image'>('assessment');
   const [photoPatientId, setPhotoPatientId] = useState('');
 
   const {
@@ -166,7 +166,7 @@ export default function DashboardPage() {
 
   const displayError = status === 'error' ? error : null;
 
-  const tabButton = (id: 'assessment' | 'photo', label: string, Icon: React.ElementType) => (
+  const tabButton = (id: 'assessment' | 'image', label: string, Icon: React.ElementType) => (
     <button
       type="button"
       onClick={() => setActiveTab(id)}
@@ -274,7 +274,7 @@ export default function DashboardPage() {
 
           <div className="mb-6 inline-flex gap-1 rounded-[4px] border-2 border-black bg-neutral-100 p-1 dark:border-neutral-600 dark:bg-neutral-800">
             {tabButton('assessment', 'Assessment', ClipboardList)}
-            {tabButton('photo', 'Photo', Camera)}
+            {tabButton('image', 'Image', Camera)}
           </div>
 
           <div className={activeTab === 'assessment' ? 'contents space-y-6' : 'hidden'}>
@@ -367,7 +367,7 @@ export default function DashboardPage() {
           </div>
           </div>
 
-          <div className={activeTab === 'photo' ? 'contents' : 'hidden'}>
+          <div className={activeTab === 'image' ? 'contents' : 'hidden'}>
             <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
               <div className="space-y-4 animate-rise lg:col-span-7">
                 <div className="rounded-[4px] border-2 border-black bg-white p-4 shadow-card dark:border-neutral-600 dark:bg-neutral-900">
@@ -387,7 +387,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
 
-                <ImageUploadCard patientId={photoPatientId.trim() || undefined} />
+                <ImageAnalysisPanel patientId={photoPatientId.trim() || undefined} baseRisk={activeRiskScore} />
               </div>
 
               <aside className="space-y-4 animate-rise lg:col-span-5">
@@ -400,7 +400,7 @@ export default function DashboardPage() {
                     <li>Eyes are covered on the server before anything comes back.</li>
                     <li>If no face is found, no preview is returned at all.</li>
                     <li>The image is never written to disk or to the database.</li>
-                    <li>The check reports sharpness, brightness, face size and framing.</li>
+                    <li>Frontal, teeth, tongue and jawline views feed one NDMS score.</li>
                   </ul>
                 </div>
 
@@ -408,8 +408,8 @@ export default function DashboardPage() {
                   <h2 className="mb-2 text-sm font-semibold text-neutral-800 dark:text-neutral-50">What it does not do</h2>
                   <ul className="space-y-1.5 text-xs text-neutral-600 dark:text-neutral-300">
                     <li>It does not auto-fill clinical fields.</li>
-                    <li>Photo measurements did not improve the difficulty model on this dataset.</li>
-                    <li>The risk prediction still comes from the measurements in the Assessment tab.</li>
+                    <li>NDMS is heuristic and not clinically validated: it adds at most +5 risk points and never lowers the tabular risk.</li>
+                    <li>The main risk prediction still comes from the measurements in the Assessment tab.</li>
                   </ul>
                 </div>
               </aside>
