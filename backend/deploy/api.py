@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 import uuid
@@ -12,6 +13,7 @@ from .database import connect_db, close_db, ensure_indexes, client
 from .logging_config import setup_logging
 from .model_loader import load_model, get_model_info, model_status
 from .routers import auth, images, llm, patients, predictions
+from . import image_analysis, real_model
 
 setup_logging(debug=settings.debug)
 
@@ -21,6 +23,7 @@ async def lifespan(app: FastAPI):
     await connect_db()
     await ensure_indexes()
     load_model()
+    asyncio.create_task(_warm_models())
     yield
     await close_db()
 
@@ -32,6 +35,20 @@ app = FastAPI(
 )
 
 logger = logging.getLogger("airway.api")
+
+
+async def _warm_models() -> None:
+    await asyncio.sleep(3)
+    try:
+        await asyncio.to_thread(image_analysis.get_model)
+        logger.info("Face model warmed up")
+    except Exception:
+        logger.warning("Face model warm-up skipped", exc_info=True)
+    try:
+        await asyncio.to_thread(real_model.load)
+        logger.info("Real model warmed up")
+    except Exception:
+        logger.warning("Real model warm-up skipped", exc_info=True)
 
 app.add_middleware(
     CORSMiddleware,

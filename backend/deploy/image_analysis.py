@@ -23,6 +23,7 @@ import base64
 import io
 import logging
 import os
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -41,7 +42,7 @@ MIN_FACE_AREA_FRAC = 0.02
 MIN_BLUR = 40.0
 BRIGHT_LOW, BRIGHT_HIGH = 35.0, 235.0
 BLUR_WORKING_WIDTH = 800
-DETECT_MAX_SIDE = 1024
+DETECT_MAX_SIDE = 768
 DETECT_IMGSZ = 384
 PREVIEW_WIDTH = 640
 BLACK = (0, 0, 0)
@@ -69,6 +70,7 @@ TONGUE_SAT_MIN = 90.0
 TONGUE_VALUE_MIN = 50.0
 
 _model = None
+_model_lock = threading.Lock()
 
 
 def default_model_path() -> Path:
@@ -85,16 +87,18 @@ def get_model():
     """Load the face model once. Raises (no silent fallback) if it is missing."""
     global _model
     if _model is None:
-        from ultralytics import YOLO
+        with _model_lock:
+            if _model is None:
+                from ultralytics import YOLO
 
-        path = default_model_path()
-        if not path.exists():
-            raise RuntimeError(
-                f"Face model not found: {path}. Set FACE_MODEL_PATH or download "
-                "yolo26n-face.pt from https://github.com/akanametov/yolo-face/releases"
-            )
-        _model = YOLO(str(path))
-        logger.info("Face model loaded: %s", path.name)
+                path = default_model_path()
+                if not path.exists():
+                    raise RuntimeError(
+                        f"Face model not found: {path}. Set FACE_MODEL_PATH or download "
+                        "yolo26n-face.pt from https://github.com/akanametov/yolo-face/releases"
+                    )
+                _model = YOLO(str(path))
+                logger.info("Face model loaded: %s", path.name)
     return _model
 
 
