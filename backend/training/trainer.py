@@ -55,10 +55,10 @@ class Trainer:
         num_batches = 0
 
         for batch in self.train_loader:
-            tabular, images, labels = batch
+            numerical, categorical_indices, images, labels = batch
             labels = labels.to(self.device)
-            numerical = tabular.to(self.device)
-            categorical_indices = []
+            numerical = numerical.to(self.device)
+            categorical_indices = [c.to(self.device) for c in categorical_indices]
 
             with autocast(enabled=self.use_amp):
                 logits = self.model(numerical, categorical_indices, images)
@@ -89,10 +89,10 @@ class Trainer:
         num_batches = 0
 
         for batch in self.val_loader:
-            tabular, images, labels = batch
+            numerical, categorical_indices, images, labels = batch
             labels = labels.to(self.device)
-            numerical = tabular.to(self.device)
-            categorical_indices = []
+            numerical = numerical.to(self.device)
+            categorical_indices = [c.to(self.device) for c in categorical_indices]
 
             with autocast(enabled=self.use_amp):
                 logits = self.model(numerical, categorical_indices, images)

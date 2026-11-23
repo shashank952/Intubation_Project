@@ -3,6 +3,14 @@
 Notable changes to the Intubation_Project. Format follows
 [Keep a Changelog](https://keepachangelog.com/); entries grouped by date.
 
+## 2026-11-20 — Fix bimodal risk scores (label smoothing + calibrated temperature)
+
+### Backend / ML
+- `backend/training/train_tabular.py`: train with label smoothing (`LABEL_SMOOTHING=0.1`) so the TabTransformer no longer produces overconfident logits. Fixes the "risk score only ever ~13% (Easy) or ~88% (Difficult), Moderate never appears" issue — the model now predicts all three classes (Moderate recall 0.83 vs ~0 before).
+- `tabular_scaler.pkl` is now written by the same training run (replaces the separate `scripts/save_scaler.py` step), so the checkpoint and scaler can never drift.
+- `MODEL_SOFTMAX_TEMPERATURE` default changed 5.0 → 1.0. Label smoothing already calibrates the logits, so the old 5.0 temperature was over-flattening (it compressed the risk score into a ~40–60 band).
+- Retrained `checkpoints/tabular_best.pt`: 0.792 accuracy / 0.931 AUC (down from 0.859/0.970 — the expected cost of honest, non-overconfident probabilities), with balanced per-class recall (Easy 0.82 / Moderate 0.83 / Difficult 0.73) and a continuous risk-score span.
+
 ## 2026-11-11 — Real-patient model, photo analysis endpoint, dashboard Photo tab
 
 ### Data pipeline

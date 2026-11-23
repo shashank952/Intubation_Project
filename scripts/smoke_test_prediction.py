@@ -63,7 +63,7 @@ def predict(raw_numerical, cat_values):
         categorical.append(torch.tensor([v], dtype=torch.long))
     with torch.no_grad():
         logits = model(numerical, [c for c in categorical])
-        probs = torch.softmax(logits / 5.0, dim=-1)  # same temperature as model_loader
+        probs = torch.softmax(logits / 1.0, dim=-1)  # same temperature as model_loader
         pred = probs.argmax(dim=-1).item()
     names = ["Easy", "Moderate", "Difficult"]
     return names[pred], {n: round(float(probs[0, i]), 3) for i, n in enumerate(names)}

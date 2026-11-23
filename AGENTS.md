@@ -78,7 +78,7 @@ No Makefile, no `pyproject.toml`, no pre-commit hooks.
 - **Model must load or the app refuses to start**: `MODEL_REQUIRED=true` (default). A missing checkpoint raises at startup instead of silently serving random weights. `MODEL_REQUIRED=false` is dev-only.
 - **Sessions are server-enforced**: every JWT carries a `sid` claim; the `sessions` collection holds `last_activity_at`. Idle longer than `SESSION_IDLE_TIMEOUT_MINUTES` (30) or older than `SESSION_ABSOLUTE_TIMEOUT_HOURS` (12) → 401 with `detail.code` = `session_expired` (or `session_revoked` after logout). Do **not** add background API polling — it would keep idle sessions alive and defeat automatic logoff. Legacy tokens without `sid` are rejected (`relogin_required`); users sign in once after deploy.
 - **Never count idle ticks in the browser**: background tabs throttle `setInterval` to ~1/min. `frontend/src/lib/useIdleTimeout.ts` computes elapsed from a timestamp and recomputes on `visibilitychange` — do not rewrite it as a decrementing counter.
-- **Softmax temperature 5.0 is calibration debt**: softens synthetic-training logits. Tune on real held-out data before clinical use (`MODEL_SOFTMAX_TEMPERATURE`).
+- **Softmax temperature is 1.0 (calibrated)**: `train_tabular.py` trains with label smoothing, which keeps logits calibrated; `MODEL_SOFTMAX_TEMPERATURE` defaults to 1.0 (no extra scaling). Raising it back to 5.0 would over-flatten the risk score into a ~40–60 band and re-collapse "Moderate".
 - **In-memory rate limits** (login/register/predict): per-process only. Running multiple uvicorn workers or restarting resets them — move to Redis before scaling horizontally.
 - **Multimodal trainer drops categoricals**: `backend/training/trainer.py:61,95` hardcode `categorical_indices = []`. Only the standalone `train_tabular.py` path is correct (22 cats + 7 nums, which is what `tabular_best.pt` used).
 - **No `train_multimodal.py`**: `trainer.py` is a class only — dataset wiring (`backend/data/`) exists but nothing drives it end-to-end.
@@ -103,7 +103,7 @@ Triggers on push/PR to `main`. Four jobs:
 
 | File | Accuracy | AUC-ROC |
 |------|----------|---------|
-| `checkpoints/tabular_best.pt` | 0.859 | 0.970 |
+| `checkpoints/tabular_best.pt` | 0.792 | 0.931 |
 | `checkpoints/xgboost_best.json` | 0.845 | 0.962 |
 | `checkpoints/randomforest_best.pkl` | 0.813 | 0.953 |
 

@@ -30,6 +30,10 @@ const PredictionContext = createContext<PredictionContextValue | null>(null);
 const PATIENT_KEY = 'bg_last_patient';
 const RESULT_KEY = 'bg_last_result';
 
+// Must stay above the backend report budget (LLM_REPORT_BUDGET_SECONDS = 28s),
+// otherwise the client aborts before the server can return its fallback report.
+const PREDICTION_TIMEOUT_MS = 45_000;
+
 function readJson<T>(key: string): T | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -120,7 +124,7 @@ export function PredictionProvider({ children }: { children: ReactNode }) {
     setStartedAt(Date.now());
 
     // Hard safety timeout — never hang forever.
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    const timeout = setTimeout(() => controller.abort(), PREDICTION_TIMEOUT_MS);
 
     (async () => {
       try {
@@ -145,7 +149,7 @@ export function PredictionProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         if (controller.signal.aborted) {
           setError(
-            'Time limit exceeded. The assessment took too long. Please try again.'
+            'Time limit exceeded. The server did not respond in time. Please wait a moment and try again.'
           );
         } else {
           setError(err instanceof Error ? err.message : 'Prediction failed. Please try again.');

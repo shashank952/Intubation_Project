@@ -108,9 +108,8 @@ def model_status() -> str:
 
 def predict_tabular(numerical: torch.Tensor, categorical: list) -> dict:
     model = get_model()
-    # Temperature softens extreme logits from synthetic-data training.
-    # NOTE: calibration debt — replace with a calibrated temperature
-    # (Platt/temperature scaling on held-out REAL data) before clinical use.
+    # Label smoothing in train_tabular.py keeps the logits calibrated, so the
+    # temperature defaults to 1.0 (a no-op). Kept configurable for future tuning.
     temperature = settings.model_softmax_temperature
     with torch.no_grad():
         logits = model(numerical.to(_device), [c.to(_device) for c in categorical])

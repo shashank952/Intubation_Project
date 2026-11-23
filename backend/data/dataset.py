@@ -3,8 +3,9 @@ import torch
 from torch.utils.data import Dataset
 from pathlib import Path
 from PIL import Image
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from .transforms import get_train_transforms, get_val_transforms
+from .preprocessing import CATEGORICAL_COLS, NUMERICAL_COLS
 
 
 class AirwayDataset(Dataset):
@@ -38,11 +39,13 @@ class AirwayDataset(Dataset):
     def __len__(self) -> int:
         return len(self.df)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, Dict[str, torch.Tensor], Optional[torch.Tensor]]:
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[torch.Tensor, List[torch.Tensor], Dict[str, Optional[torch.Tensor]], Optional[torch.Tensor]]:
         row = self.df.iloc[idx]
         patient_id = str(row.get("Patient_ID", idx))
 
-        tabular = self._get_tabular(row)
+        numerical, categorical = self._get_tabular(row)
         images = self._load_images(patient_id)
 
         if self.target_col and self.target_col in self.df.columns:
@@ -50,18 +53,22 @@ class AirwayDataset(Dataset):
         else:
             label = None
 
-        return tabular, images, label
+        return numerical, categorical, images, label
 
-    def _get_tabular(self, row) -> torch.Tensor:
-        vals = []
-        for col in self.df.columns:
-            if col in ("Patient_ID", self.target_col):
-                continue
-            v = row[col]
-            if pd.isna(v):
-                v = 0.0
-            vals.append(float(v))
-        return torch.tensor(vals, dtype=torch.float32)
+    def _get_tabular(self, row) -> Tuple[torch.Tensor, List[torch.Tensor]]:
+        numerical = torch.tensor(
+            [float(row.get(col, 0.0)) if not pd.isna(row.get(col)) else 0.0 for col in NUMERICAL_COLS],
+            dtype=torch.float32,
+        )
+        if self.scaler is not None:
+            scaled = self.scaler.transform(numerical.numpy().reshape(1, -1))[0]
+            numerical = torch.tensor(scaled, dtype=torch.float32)
+
+        categorical = [
+            torch.tensor(int(row.get(col, 0)) if not pd.isna(row.get(col)) else 0, dtype=torch.long)
+            for col in CATEGORICAL_COLS
+        ]
+        return numerical, categorical
 
     def _load_images(self, patient_id: str) -> Dict[str, Optional[torch.Tensor]]:
         patient_dir = self.image_root / patient_id

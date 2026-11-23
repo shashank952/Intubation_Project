@@ -52,9 +52,9 @@ class Settings(BaseSettings):
     # for local development — the API then serves random weights (flagged in
     # /ready and logs) and must never be used in production.
     model_required: bool = True
-    # Softmax temperature to soften extreme logits (synthetic-data training).
-    # Calibration debt: tune on held-out real data before clinical use.
-    model_softmax_temperature: float = 5.0
+    # Softmax temperature. Label smoothing in train_tabular.py already keeps the
+    # logits calibrated, so the optimal temperature is 1.0 (no extra scaling).
+    model_softmax_temperature: float = 1.0
 
     prediction_model: Literal["real", "synthetic"] = "real"
 

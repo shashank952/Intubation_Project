@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import pandas as pd
+import joblib
 from pathlib import Path
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
@@ -24,6 +25,8 @@ EPOCHS = 100
 PATIENCE = 15
 LR = 1e-3
 WEIGHT_DECAY = 1e-4
+# Prevents overconfident logits that collapse output into a bimodal Easy/Difficult split.
+LABEL_SMOOTHING = 0.1
 
 CATEGORICAL_COLS = [
     "Gender", "Previous_Airway_Records",
@@ -179,6 +182,10 @@ def main():
         train_df, val_df, test_df
     )
 
+    # Persist the scaler next to the checkpoint so inference always uses the
+    # exact scaler fitted by this run (replaces the separate save_scaler.py step).
+    joblib.dump(scaler, ROOT / "checkpoints" / "tabular_scaler.pkl")
+
     num_numerical = len(NUMERICAL_COLS)
     print(f"Numerical: {num_numerical}, Categorical: {len(cat_cardinalities)}")
 
@@ -214,7 +221,7 @@ def main():
         [len(train_df) / (len(class_counts) * class_counts[i]) for i in range(len(class_counts))],
         dtype=torch.float32
     ).to(DEVICE)
-    loss_fn = nn.CrossEntropyLoss(weight=weight)
+    loss_fn = nn.CrossEntropyLoss(weight=weight, label_smoothing=LABEL_SMOOTHING)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=5, factor=0.5)
 

@@ -43,11 +43,13 @@ def generate_gradcam(
         target_module = last_layer
 
     fh = target_module.register_forward_hook(forward_hook("target"))
+    bh = target_module.register_full_backward_hook(backward_hook("target"))
     output = model(numerical, categorical_indices, images)
     fh.remove()
 
     model.zero_grad()
     output[0, target_class].backward()
+    bh.remove()
 
     weights = gradients["target"].mean(dim=(2, 3), keepdim=True)
     cam = (weights * activations["target"]).sum(dim=1, keepdim=True)

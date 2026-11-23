@@ -50,6 +50,10 @@ const STEPS = [
   { key: 'history', label: 'History', icon: History },
 ];
 
+// Must stay above the backend report budget (LLM_REPORT_BUDGET_SECONDS = 28s),
+// otherwise the client aborts before the server can return its fallback report.
+const PREDICTION_TIMEOUT_MS = 45000;
+
 const YES_NO = [
   { label: 'No', value: 'No' },
   { label: 'Yes', value: 'Yes' },
@@ -164,7 +168,7 @@ export default function AssessmentScreen() {
 
     const controller = new AbortController();
     const slowTimer = setTimeout(() => setPredictingSlow(true), 5000);
-    const failTimer = setTimeout(() => controller.abort(), 35000);
+    const failTimer = setTimeout(() => controller.abort(), PREDICTION_TIMEOUT_MS);
 
     const numericData: PredictionInput = {
       ...formData,
@@ -203,7 +207,7 @@ export default function AssessmentScreen() {
     } catch (err) {
       if (controller.signal.aborted) {
         setSubmitError(
-          'Time limit exceeded. There has been an error with the LLM response. Please wait for a while and try again.',
+          'Time limit exceeded. The server did not respond in time. Please wait a moment and try again.',
         );
       } else {
         setSubmitError(err instanceof Error ? err.message : 'Prediction failed. Please try again.');

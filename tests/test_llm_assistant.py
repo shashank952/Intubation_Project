@@ -1,8 +1,15 @@
+import asyncio
+import time
+
+from backend.deploy import llm_assistant
 from backend.deploy.llm_assistant import (
+    _call_llm,
     _fallback_recommendations,
     _fallback_summary,
     _is_feasible,
     build_patient_profile,
+    fallback_reports,
+    report_deadline,
 )
 
 
@@ -53,3 +60,65 @@ class TestFeasibility:
 
     def test_long_text_feasible(self):
         assert _is_feasible("This is a sufficiently long clinical response.")
+
+
+class TestBudget:
+    def test_report_deadline_is_in_the_future(self):
+        assert report_deadline() > time.monotonic()
+
+    def test_call_llm_skips_http_when_budget_already_spent(self, monkeypatch):
+        monkeypatch.setattr(llm_assistant.settings, "llm_external_enabled", True)
+        assert _call_llm("prompt", deadline=time.monotonic() - 1) is None
+
+    def test_generate_summary_falls_back_when_budget_already_spent(self, monkeypatch):
+        monkeypatch.setattr(llm_assistant.settings, "llm_external_enabled", True)
+        text, source = llm_assistant.generate_clinical_summary(
+            "Moderate", 0.7, {"Easy": 0.2, "Moderate": 0.7, "Difficult": 0.1},
+            {"age": 50}, deadline=time.monotonic() - 1,
+        )
+        assert source == "fallback"
+        assert "Moderate" in text
+
+    def test_fallback_reports_returns_both_sources_as_fallback(self):
+        summary, summary_source, recommendations, recommendations_source = (
+            fallback_reports("Difficult", 0.9, {"mallampati_score": 4})
+        )
+        assert "Difficult" in summary
+        assert "video laryngoscope" in recommendations
+        assert summary_source == "fallback"
+        assert recommendations_source == "fallback"
+
+
+def _fast_summary(*_args, **_kwargs):
+    return "- Fast summary line for the patient.", "llm"
+
+
+def _slow_recommendations(*_args, **_kwargs):
+    import time as _time
+
+    _time.sleep(1.0)
+    return "- Slow recommendations line.", "llm"
+
+
+class TestGenerateReports:
+    def test_parallel_calls_keep_successful_report_when_other_hits_budget(
+        self, monkeypatch
+    ):
+        monkeypatch.setattr(llm_assistant.settings, "llm_report_budget_seconds", 0.2)
+        monkeypatch.setattr(llm_assistant, "generate_clinical_summary", _fast_summary)
+        monkeypatch.setattr(
+            llm_assistant, "generate_recommendations", _slow_recommendations
+        )
+
+        summary, summary_source, recommendations, recommendations_source = (
+            asyncio.run(
+                llm_assistant.generate_reports(
+                    "Moderate", 0.7, {"Moderate": 0.7}, {"age": 50}
+                )
+            )
+        )
+
+        assert summary_source == "llm"
+        assert summary == "- Fast summary line for the patient."
+        assert recommendations_source == "fallback"
+        assert "airway equipment" in recommendations

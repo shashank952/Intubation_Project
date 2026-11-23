@@ -295,7 +295,7 @@
         <a href="#stack"><span>14</span>Tech Stack Summary</a>
         <a href="#hld"><span>15</span>High-Level System Design</a>
         <a href="#limitations"><span>16</span>Limitations &amp; Honest Status</a>
-        <a href="#images"><span>17</span>Image Pipeline &amp; Multimodal Plan</a>
+        <a href="#images"><span>17</span>How the Patient Photos Are Used</a>
       </div>
     </div>
   </section>
@@ -2659,219 +2659,167 @@ Return ONLY 5 concise bullet points.
 
   <!-- ============================ 17 IMAGE PIPELINE ============================ -->
   <section id="images">
-    <span class="eyebrow">17 · Image Pipeline &amp; Multimodal Plan</span>
-    <h2>How the 343 patient images become model input</h2>
+    <span class="eyebrow">17 · How the Patient Photos Fit In</span>
+    <h2>Using the photos, explained simply</h2>
     <p class="lead">
-      The project already ships an image branch (<code>ImageEncoder</code>, <code>CrossAttentionFusion</code>,
-      <code>AirwayDataset</code>) but nothing drives it end to end, because the images have no labels and no
-      link to a patient row. This section says what the images can honestly contribute, what processing they
-      need first, and the order to build it in.
+      This part explains, without jargon, what the 343 patient photos are for, what has to happen
+      before they become useful, and what to build first. If you read only one part of this page,
+      read this one.
     </p>
 
     <div class="card tint-pink">
-      <h3><span class="num">!</span> What is actually in the folder (measured)</h3>
+      <h3><span class="num">1</span> Start with what we actually have</h3>
+      <p>
+        Think of the photo folder as a box of pictures with nothing written on the back. The pictures
+        are fine. The problem is that nothing says <em>which patient</em> each picture belongs to, and
+        nothing says <em>what happened</em> to that patient in theatre.
+      </p>
       <table style="margin-top:10px;">
-        <thead><tr><th>Fact</th><th>Value</th><th>Consequence</th></tr></thead>
+        <thead><tr><th>What we counted</th><th>Number</th><th>What it means, plainly</th></tr></thead>
         <tbody>
-          <tr><td>Image files</td><td>343 JPG</td><td>Small enough to embed on one machine</td></tr>
-          <tr><td>Filename groups</td><td>195</td><td>Grouping is a guess, not a patient ID</td></tr>
-          <tr><td>Groups with exactly 4 images</td><td>37</td><td>Only ~37 patients could have all four views</td></tr>
-          <tr><td>Groups with exactly 1 image</td><td>149</td><td>Most images cannot form a 4-view record</td></tr>
-          <tr><td>Groups with 5+ images</td><td>6</td><td>Likely repeats or extra shots — needs de-duplication</td></tr>
-          <tr><td>Real measurement rows</td><td>125</td><td>Images and table are not joined by any key today</td></tr>
-          <tr><td>Outcome labels for images</td><td>0</td><td>Same blocker as the tabular model</td></tr>
+          <tr><td>Photos</td><td>343</td><td>Plenty of pictures to work with</td></tr>
+          <tr><td>Groups guessed from file names</td><td>195</td><td>A guess at who is who, not a real patient ID</td></tr>
+          <tr><td>Groups with all four photos</td><td>37</td><td>Only these patients have a complete set</td></tr>
+          <tr><td>Groups with a single photo</td><td>149</td><td>Most patients are only partly photographed</td></tr>
+          <tr><td>Patients in the spreadsheet</td><td>125</td><td>But no column connects a photo to a row</td></tr>
+          <tr><td>Patients with a recorded outcome</td><td>0</td><td>We do not yet know who was easy or difficult</td></tr>
         </tbody>
       </table>
       <p style="margin-bottom:0;">
-        <strong>Therefore step zero is a manifest, not a model.</strong> Every image needs
-        <code>image_path → patient_id → view_type → quality_flag</code> before any of the work below is meaningful.
-        The eye-redaction pass (<code>scripts/redact_eyes.py</code>) already produces
-        <code>data/raw/redacted_images/redaction_manifest.json</code> with per-image dimensions, detections and
-        output paths — that file is the natural seed for the real manifest.
+        <strong>So the first job is not a model. It is a list.</strong> For every photo we need three
+        things written down: which patient it belongs to, which of the four views it is, and whether
+        the photo is good enough to use. Until that list exists, anything we train is guessing.
       </p>
     </div>
 
-    <h3 style="margin-top:28px;">The four view types</h3>
-    <p>
-      The filenames follow a four-shot protocol per patient. The views are consistent across the set, which is
-      the one piece of structure you can rely on.
-    </p>
+    <h3 style="margin-top:28px;">The four photos taken of each patient</h3>
     <table>
-      <thead>
-        <tr><th>View</th><th>Example stem</th><th>What it shows</th><th>What it can measure</th></tr>
-      </thead>
+      <thead><tr><th>Photo</th><th>What you see</th><th>What it can tell us</th></tr></thead>
       <tbody>
-        <tr><td><strong>Frontal, resting</strong></td><td><code>1.jpg</code></td><td>Full face, mouth closed</td><td>Beard, facial hair, neck width, facial phenotype</td></tr>
-        <tr><td><strong>Mouth open</strong></td><td><code>1(1).jpg</code></td><td>Teeth, lips, inter-incisor gap</td><td>Mouth opening ratio, dentition, lip mobility</td></tr>
-        <tr><td><strong>Tongue out</strong></td><td><code>1(2).jpg</code></td><td>Oropharynx, soft palate, uvula</td><td><strong>Mallampati class</strong>, tongue size, palate visibility</td></tr>
-        <tr><td><strong>Lateral profile</strong></td><td><code>1(3).jpg</code></td><td>Chin, jaw line, anterior neck</td><td>Thyromental / sternomental <em>ratio</em>, neck structure, jaw position</td></tr>
+        <tr><td><strong>Face, mouth closed</strong></td><td>The whole face, looking straight ahead</td><td>Beard, jaw shape, how wide the neck looks</td></tr>
+        <tr><td><strong>Mouth open</strong></td><td>Teeth and lips</td><td>How wide the mouth opens</td></tr>
+        <tr><td><strong>Tongue out</strong></td><td>The back of the throat</td><td>The Mallampati score — how much of the throat can be seen</td></tr>
+        <tr><td><strong>Side view</strong></td><td>Chin, jaw and the front of the neck</td><td>Shape of the neck and jaw line</td></tr>
       </tbody>
     </table>
 
-    <h3 style="margin-top:28px;">Where images actually earn their place</h3>
-    <p>Ranked by how much they help <em>this</em> project, not by how impressive they sound.</p>
-    <table>
-      <thead>
-        <tr><th>#</th><th>Use</th><th>Why it is worth it</th><th>Needs outcome labels?</th><th>Build cost</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>1</td><td><strong>Auto-fill and cross-check tabular fields</strong></td><td>14 of 29 fields are currently constant or default-filled. Images can populate Mallampati, beard, neck structure and mouth opening, which raises real feature variance without recruiting a single new patient.</td><td>No</td><td>Medium</td></tr>
-        <tr><td>2</td><td><strong>Embedding-based case similarity</strong></td><td>Works with zero labels. Store one embedding per view and show "patients who look like this one" in the dashboard — immediately useful for teaching and for spotting outliers.</td><td>No</td><td>Low</td></tr>
-        <tr><td>3</td><td><strong>Image quality control</strong></td><td>Rejects the wrong view, motion blur, underexposure and closed mouth before it silently becomes a garbage embedding. Cheap and prevents most downstream nonsense.</td><td>No</td><td>Low</td></tr>
-        <tr><td>4</td><td><strong>Attribute classifiers</strong></td><td>A Mallampati head is a legitimate, clinically defined, visually observable target. It also gives the tabular model a cleaner input than a rushed human guess.</td><td>No (own annotation)</td><td>Medium</td></tr>
-        <tr><td>5</td><td><strong>Multimodal fusion for Easy/Moderate/Difficult</strong></td><td>The stated scope of the project, and the only use that needs the outcome column. It is blocked until the 125 patients have real intubation outcomes.</td><td><strong>Yes</strong></td><td>High</td></tr>
-      </tbody>
-    </table>
+    <h3 style="margin-top:28px;">Why the photos are worth having</h3>
     <p>
-      Notice the ordering: <strong>four of the five uses do not require outcome labels.</strong> That is the
-      practical answer to "how do the images add value" — they add value to data quality and retrieval now, and
-      to prediction only after the labelling blocker is cleared.
+      Five uses, easiest and most useful first. Four of them work <em>without</em> knowing how any
+      patient did.
     </p>
-
-    <h3 style="margin-top:28px;">What is legitimately visible, and which field it maps to</h3>
     <table>
-      <thead>
-        <tr><th>Existing Excel column</th><th>Source view</th><th>How it is derived</th><th>Honest reliability</th></tr>
-      </thead>
+      <thead><tr><th>Use</th><th>What it does, simply</th><th>Needs known outcomes?</th></tr></thead>
       <tbody>
-        <tr><td><code>Mallampati_Score</code> (0–3)</td><td>Tongue out</td><td>4-class head on the oral cavity crop</td><td>Good if the shot is correct; needs colour/white-balance normalisation</td></tr>
-        <tr><td><code>Beard</code> (0/1)</td><td>Frontal</td><td>Binary head on the lower-face crop</td><td>High</td></tr>
-        <tr><td><code>Neck_Structure</code> (3 levels)</td><td>Profile</td><td>3-class head on the neck silhouette</td><td>Moderate — subjective even for clinicians</td></tr>
-        <tr><td><code>Mouth_Opening_mm</code></td><td>Mouth open</td><td>Inter-incisor pixel gap ÷ inter-ocular distance, then a calibration fit to the measured millimetres</td><td><strong>Ratio only</strong> without a scale reference; absolute mm needs calibration</td></tr>
-        <tr><td><code>Thyromental_Distance_TMD_cm</code></td><td>Profile</td><td>Landmark distance ÷ inter-ocular distance</td><td>Ratio only; absolute cm is not recoverable without a ruler in frame</td></tr>
-        <tr><td><code>Sternomental_Distance_SMD_cm</code></td><td>Profile</td><td>Same approach as TMD</td><td>Ratio only</td></tr>
-        <tr><td><code>Neck_Circumference_cm</code></td><td>Frontal / profile</td><td>Width ratio, then calibrate against the tape measurements you already have</td><td>Weak; use the tape value when it exists</td></tr>
-        <tr><td><code>Disease_Down_Syndrome</code></td><td>Frontal</td><td>Facial-phenotype head</td><td>Possible but sensitive — needs governance and consent, not just a model</td></tr>
+        <tr><td>Fill the form for you</td><td>The doctor ticks fewer boxes. The computer suggests "beard: yes" or "Mallampati: 2", and the doctor confirms or corrects it.</td><td>No</td></tr>
+        <tr><td>Find similar patients</td><td>"Show me patients who look like this one." Handy for teaching and for spotting unusual cases.</td><td>No</td></tr>
+        <tr><td>Check the photo is usable</td><td>Warn when a picture is blurry, too dark, the wrong view, or the mouth is not open.</td><td>No</td></tr>
+        <tr><td>Measure what is visible</td><td>Estimate Mallampati, beard, neck shape and how far the mouth opens.</td><td>No</td></tr>
+        <tr><td>Combine photos with the form</td><td>Use everything together to predict Easy, Moderate or Difficult. This is the main goal of the project.</td><td><strong>Yes</strong></td></tr>
       </tbody>
     </table>
 
     <div class="card tint-yellow" style="margin-top:20px;">
-      <h3><span class="num">!</span> What you must not try to predict from a photograph</h3>
+      <h3><span class="num">!</span> What a photo can never tell us</h3>
       <p>
-        <code>Breathing_Snoring</code>, <code>Breathing_Sleep_Apnea</code>, <code>Symptom_Voice_Changes</code>,
-        <code>Symptom_Difficulty_Swallowing</code>, <code>Symptom_Cant_Lie_Flat</code>,
-        <code>Disease_Diabetes</code>, <code>Disease_Arthritis</code> and <code>Previous_Airway_Records</code>
-        are <strong>not visible in these images</strong>. A classifier trained to output them will not learn the
-        condition; it will learn camera, lighting, ward and demographic shortcuts, and it will look accurate on a
-        small dataset precisely because of that.
+        Some things in the spreadsheet are not pictures of anything. Snoring, sleep apnoea, voice
+        changes, trouble swallowing, diabetes, arthritis and past airway problems <strong>cannot be
+        seen in a photograph</strong>.
       </p>
       <p style="margin-bottom:0;">
-        Restrict image heads to anatomy and appearance. Anything else stays a form field. This is also why the
-        existing annotation template insists on labelling from <em>what actually happened</em> during intubation
-        rather than from the measurements.
+        If we train the computer to "spot" them anyway, it will not learn medicine. It will learn
+        which ward the photo came from, which phone took it, or how bright the room was — and it will
+        still look accurate on a small set of photos. That is the most common way a project like this
+        fools itself. Leave those fields on the form.
       </p>
     </div>
 
-    <h3 style="margin-top:28px;">The processing pipeline</h3>
-    <div class="card">
+    <h3 style="margin-top:28px;">What happens when a doctor uploads four photos</h3>
+    <div class="card tint-cyan">
       <ol style="padding-left:20px;margin:0;">
-        <li><strong>Ingest and normalise.</strong> Apply EXIF orientation, convert to RGB, strip metadata. The redaction script already does this.</li>
-        <li><strong>Privacy first.</strong> Black-strip the eyes before anything is stored outside the clinical machine. Done for all 343 images (<code>data/raw/redacted_images/</code>). Keep the raw set only locally.</li>
-        <li><strong>View classification.</strong> A 4-class head (frontal / mouth-open / tongue-out / profile) plus a reject class. This turns filenames into semantics and flags mislabelled uploads in the dashboard.</li>
-        <li><strong>Quality gate.</strong> Blur (variance of Laplacian), exposure, face/mouth present, mouth actually open. Reject with a reason rather than embedding a bad frame.</li>
-        <li><strong>Per-view crops.</strong> Face box, oral-cavity box, neck/jaw band. Crop before resize so a 4:3 phone photo and a 16:9 photo land in the same geometry.</li>
-        <li><strong>Colour normalisation.</strong> Grey-world or histogram matching per view. Mallampati scoring depends on palate colour, and phone white balance varies wildly across this dataset.</li>
-        <li><strong>Resize and tensorise.</strong> 224×224 for a ResNet-class backbone, ImageNet mean/std — matching <code>backend/data/transforms.py</code> so the existing encoder works unchanged.</li>
-        <li><strong>Embed and persist.</strong> One L2-normalised vector per view, stored with <code>patient_id</code>, <code>view_type</code>, model name and version.</li>
+        <li><strong>Upload.</strong> The doctor picks the four photos for one patient.</li>
+        <li><strong>Hide the eyes.</strong> Each photo is copied with a black strip over the eyes. This is already done for all 343 photos.</li>
+        <li><strong>Name the view.</strong> The computer decides "this is the tongue-out photo", and rejects a duplicate or the wrong picture.</li>
+        <li><strong>Check quality.</strong> Blurry, dark or closed-mouth photos go back with a plain reason.</li>
+        <li><strong>Turn the photo into numbers.</strong> Each photo becomes a short list of numbers — think of it as a fingerprint for that face. Explained below.</li>
+        <li><strong>Suggest form values.</strong> The computer pre-fills a few fields. The doctor confirms or changes them. Nothing is saved behind their back.</li>
+        <li><strong>Predict.</strong> The form plus the fingerprints give Easy, Moderate or Difficult, and the report shows which photos mattered.</li>
       </ol>
     </div>
 
-    <h3 style="margin-top:28px;">Annotation plan</h3>
+    <h3 style="margin-top:28px;">"Turning a photo into numbers" — what that means</h3>
     <p>
-      The existing <code>data/raw/annotation_template.xlsx</code> labels <strong>outcomes</strong> (Cormack–Lehane,
-      attempts, adjuncts) — one row per patient. It does not label images. You need a second, image-level sheet that
-      joins to it by <code>Patient_ID</code>.
+      A computer cannot compare pictures directly. So each photo is passed through a ready-made image
+      model that has already looked at millions of pictures, and we keep its summary: a list of a few
+      hundred numbers. Two photos of similar faces produce similar lists. That list is called an
+      <strong>embedding</strong>.
+    </p>
+    <p>
+      Nothing magic happens here. Nobody writes down "this means a thick neck". The numbers are only
+      a compact description that a second, small model can compare. It is the difference between
+      handing someone a photo and handing them a short written note about the photo.
+    </p>
+    <p style="margin-bottom:0;">
+      We keep one fingerprint per photo, saved next to the patient ID. That way the same photo is
+      never processed twice, and the dashboard can look for close matches.
+    </p>
+
+    <h3 style="margin-top:28px;">Labelling the photos</h3>
+    <p>
+      The spreadsheet template that already exists labels <em>what happened</em> to a patient. It does
+      not label the photos. We need a second sheet, one row per photo, joined to the first by patient
+      ID. It is filled in four steps.
     </p>
     <table>
-      <thead>
-        <tr><th>Tier</th><th>What is labelled</th><th>Granularity</th><th>Who</th><th>Why</th></tr>
-      </thead>
+      <thead><tr><th>Step</th><th>What gets written down</th><th>Who does it</th></tr></thead>
       <tbody>
-        <tr><td>0</td><td>Patient ID, view type, usable yes/no, reject reason</td><td>Per image</td><td>Fast, semi-automatic then eyeballed</td><td>Unblocks everything else</td></tr>
-        <tr><td>1</td><td>Mallampati class, beard, neck structure, mouth-open yes/no</td><td>Per image</td><td>Clinician, blinded to the Excel values</td><td>Trains the attribute heads</td></tr>
-        <tr><td>2</td><td>Direct measurements where a scale exists</td><td>Per patient</td><td>Clinician</td><td>Calibrates pixel ratios to centimetres</td></tr>
-        <tr><td>3</td><td>Outcome label</td><td>Per patient</td><td>Already covered by the existing template</td><td>The fusion model's target</td></tr>
+        <tr><td>1</td><td>Patient ID, which view, usable or not, and why not</td><td>A quick desk pass, then a check</td></tr>
+        <tr><td>2</td><td>Mallampati, beard, neck shape, mouth open yes or no</td><td>A clinician, without seeing the spreadsheet answers</td></tr>
+        <tr><td>3</td><td>Real measurements, only where a ruler is in the photo</td><td>A clinician</td></tr>
+        <tr><td>4</td><td>Easy, Moderate or Difficult</td><td>Already covered by the existing template</td></tr>
       </tbody>
     </table>
     <div class="card flat tint-grey" style="margin-top:16px;">
-      <h3><span class="num">→</span> Annotation rules that protect the result</h3>
+      <h3><span class="num">→</span> Three rules that keep the result honest</h3>
       <ul style="padding-left:18px;margin:0;">
-        <li><strong>Annotate blind.</strong> The clinician scoring Mallampati from a photo must not see the Excel value, or the agreement you measure is circular.</li>
-        <li><strong>One patient, one side of the split.</strong> All images and all tabular rows for a patient go to train or test together. Splitting images randomly leaks identity across the boundary.</li>
-        <li><strong>Never train on a field you will also feed as tabular input.</strong> If the model prefills <code>Mallampati_Score</code> from the tongue-out image, that image's embedding must not also enter the fusion branch for the same prediction — otherwise the model double-counts one view and your ablation lies.</li>
-        <li><strong>Double-annotate 10 %.</strong> Report Cohen's κ per attribute. Below roughly 0.6 the label is too subjective to be a target; keep it as a form field.</li>
+        <li><strong>Label blind.</strong> If the clinician scoring a photo can see the spreadsheet answer, then "the computer agrees with the doctor" means nothing.</li>
+        <li><strong>Keep one patient on one side.</strong> All photos and all form rows for a patient go into training together, or into testing together — never split across both. Otherwise the computer has already met the patient it is being tested on.</li>
+        <li><strong>Do not count the same clue twice.</strong> If the computer fills in Mallampati from the tongue photo, do not also feed that same photo into the prediction. That would make the photos look more useful than they really are.</li>
       </ul>
     </div>
 
-    <h3 style="margin-top:28px;">Embeddings and fusion — what already exists</h3>
+    <h3 style="margin-top:28px;">The order to build it in</h3>
     <table>
-      <thead>
-        <tr><th>Piece</th><th>File</th><th>Status</th><th>What has to change</th></tr>
-      </thead>
+      <thead><tr><th>Step</th><th>What we build</th><th>How we know it is done</th></tr></thead>
       <tbody>
-        <tr><td>Per-view backbone</td><td><code>backend/models/image_encoder.py</code></td><td>ResNet50 via <code>timm</code>, shared backbone + per-modality projection to 128-d</td><td>Use frozen weights first; 23 M parameters on ~37 complete patients will overfit otherwise</td></tr>
-        <tr><td>Fusion</td><td><code>backend/models/fusion.py</code></td><td>Cross-attention of the tabular token over available image tokens, returns 128-d</td><td>Already tolerates missing views (<code>None</code> skipped) — keep that behaviour, it is the realistic case</td></tr>
-        <tr><td>Dataset</td><td><code>backend/data/dataset.py</code></td><td>Expects <code>image_root/&lt;patient_id&gt;/&lt;modality&gt;.*</code></td><td>Modality list is <code>face, side_profile, neck, ultrasound, ct_mri</code> — there is <strong>no slot for the tongue-out view</strong>, and ultrasound/CT do not exist here</td></tr>
-        <tr><td>Tabular hand-off</td><td><code>backend/data/dataset.py</code></td><td>Flattens every column to one float vector</td><td><code>TabEncoder</code> expects <code>(numerical, categorical_indices)</code> — the two do not match</td></tr>
-        <tr><td>Trainer</td><td><code>backend/training/trainer.py</code></td><td>Passes <code>categorical_indices = []</code></td><td>Must be wired to the real 22 categorical fields or the fusion model sees no categoricals</td></tr>
-      </tbody>
-    </table>
-    <p>
-      Recommended target layout, aligned with the code rather than fighting it:
-    </p>
-    <ul style="padding-left:20px;">
-      <li><code>image_root/&lt;patient_id&gt;/face.jpg</code> — frontal resting</li>
-      <li><code>image_root/&lt;patient_id&gt;/oral.jpg</code> — tongue out (add this modality key)</li>
-      <li><code>image_root/&lt;patient_id&gt;/mouth.jpg</code> — mouth open (optional fifth key)</li>
-      <li><code>image_root/&lt;patient_id&gt;/side_profile.jpg</code> — lateral neck</li>
-    </ul>
-
-    <h3 style="margin-top:28px;">Dashboard flow</h3>
-    <div class="card tint-cyan">
-      <ol style="padding-left:20px;margin:0;">
-        <li>Clinician uploads the four views for one patient.</li>
-        <li>Each file is redacted, EXIF-stripped, then classified into a view type. A wrong or duplicate view is rejected with a specific reason.</li>
-        <li>The quality gate flags blur, underexposure and closed mouth before anything is stored.</li>
-        <li>Embeddings are computed per view and stored against the patient record.</li>
-        <li>Attribute heads prefill Mallampati, beard, neck structure and mouth-open ratio into the form — <strong>as editable suggestions, never silently</strong>.</li>
-        <li>The clinician confirms or corrects the form, then runs the prediction. What the clinician confirmed is what gets stored as training data, so the loop improves instead of poisoning itself.</li>
-        <li>The report shows which views contributed, plus the nearest similar patients from the embedding index.</li>
-      </ol>
-    </div>
-
-    <h3 style="margin-top:28px;">Evaluation protocol</h3>
-    <table>
-      <thead><tr><th>Question</th><th>How to answer it</th><th>Pass condition</th></tr></thead>
-      <tbody>
-        <tr><td>Do the images add signal over the table?</td><td>Group-aware CV: tabular-only vs tabular + one view vs tabular + all views</td><td>Improvement with non-overlapping confidence intervals</td></tr>
-        <tr><td>Is the gain real or leakage?</td><td>Repeat the ablation with prefilled tabular fields replaced by the clinician's original values</td><td>Gain survives</td></tr>
-        <tr><td>Does it work with missing views?</td><td>Drop one view at a time at inference</td><td>Graceful degradation, not collapse</td></tr>
-        <tr><td>Are attribute heads trustworthy?</td><td>Hold out patients, report κ against the blinded clinician labels and a reliability curve</td><td>κ ≥ 0.6, calibration slope near 1.0</td></tr>
-      </tbody>
-    </table>
-
-    <h3 style="margin-top:28px;">Roadmap, in the order that unblocks the most</h3>
-    <table>
-      <thead><tr><th>Phase</th><th>Deliverable</th><th>Gate before moving on</th></tr></thead>
-      <tbody>
-        <tr><td>P0</td><td>Image manifest: path → patient_id → view → quality; de-duplicate the 6 oversized groups</td><td>100 % of images have a patient ID and a view label; 4-view coverage counted</td></tr>
-        <tr><td>P1</td><td>View classifier + quality gate</td><td>≥ 95 % view accuracy on held-out patients; rejects are explained</td></tr>
-        <tr><td>P2</td><td>Frozen embeddings + similarity search in the dashboard</td><td>Clinician agrees the retrieved cases are plausibly similar</td></tr>
-        <tr><td>P3</td><td>Blinded annotation of attribute labels</td><td>κ ≥ 0.6 per attribute; 10 % double-annotated</td></tr>
-        <tr><td>P4</td><td>Attribute heads + tabular prefill</td><td>Beats the human baseline on held-out patients without leakage</td></tr>
-        <tr><td>P5</td><td>Multimodal fusion for Easy/Moderate/Difficult</td><td>Beats tabular-only <em>and</em> XGBoost with non-overlapping CIs</td></tr>
-        <tr><td>P6</td><td>Four-view upload end-to-end in the dashboard</td><td>Works on 10 real patients start to finish</td></tr>
+        <tr><td>1</td><td>The list: which photo belongs to which patient and view</td><td>Every photo has a patient and a view, and we know how many complete sets exist</td></tr>
+        <tr><td>2</td><td>A view checker and a quality checker</td><td>It names the right view almost every time, and explains its rejections</td></tr>
+        <tr><td>3</td><td>Fingerprints, plus "find similar patients"</td><td>A clinician agrees the matches look similar</td></tr>
+        <tr><td>4</td><td>Blind labelling of the visible features</td><td>Two clinicians agree on most photos, and we measure how often</td></tr>
+        <tr><td>5</td><td>Automatic form filling</td><td>It matches a careful clinician on patients it has never seen</td></tr>
+        <tr><td>6</td><td>The full prediction, using form and photos</td><td>It beats the form-only model, and the gain is not luck</td></tr>
+        <tr><td>7</td><td>Four-photo upload in the dashboard</td><td>Ten real patients go through from start to finish</td></tr>
       </tbody>
     </table>
 
     <div class="card tint-grey" style="margin-top:20px;">
-      <h3><span class="num">→</span> What this plan deliberately does not promise</h3>
+      <h3><span class="num">→</span> What this plan will not claim</h3>
       <ul style="padding-left:18px;margin:0;">
-        <li><strong>No diagnosis from a face.</strong> The image branch reads anatomy and appearance; it does not detect disease.</li>
-        <li><strong>No accuracy number from 37 complete patients.</strong> That is enough to prove a pipeline works, not enough to claim generalisation.</li>
-        <li><strong>No real multimodal result until outcomes exist.</strong> Phases P0–P4 are useful and unblocked; P5 is not.</li>
-        <li><strong>No PHI in git or images.</strong> Redacted copies stay under <code>data/raw/</code>, which is gitignored and dockerignored.</li>
+        <li>It will not diagnose illness from a face. It reads shape and appearance only.</li>
+        <li>It will not quote an accuracy figure from 37 complete patients. That is enough to prove the plumbing works, not enough to claim it generalises.</li>
+        <li>It will not deliver a real photo-plus-form result until patients have recorded outcomes. Steps 1 to 5 above do not need them; step 6 does.</li>
+        <li>It will not put patient photos into git. The redacted copies stay in a folder that git ignores.</li>
       </ul>
+    </div>
+
+    <div class="card flat tint-grey" style="margin-top:20px;">
+      <h3><span class="num">→</span> For engineers: where this lives</h3>
+      <p style="margin-bottom:0;">
+        Hiding the eyes is <code>scripts/redact_eyes.py</code>. The image branch already exists in
+        <code>backend/models/image_encoder.py</code> and <code>backend/models/fusion.py</code>, but it
+        has no slot for the tongue-out view, and the dataset hands the form over as one flat list
+        while the encoder expects numbers and categories separately. Nothing drives it end to end yet.
+      </p>
     </div>
   </section>
 

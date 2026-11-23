@@ -38,6 +38,16 @@ DockerDesktopWSL/
 *.log
 logs/
 
+# Coverage & generated analysis output
+.coverage
+coverage.xml
+htmlcov/
+graphify-out/
+
+# Local derivative / patient tables (never commit)
+/data/AI laryngoscopy3.xlsx
+/data/dataset_with_decision.xlsx
+
 # Tool cache
 .understand-anything/
 
