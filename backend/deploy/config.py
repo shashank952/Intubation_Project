@@ -42,8 +42,8 @@ class Settings(BaseSettings):
     llm_retries: int = 1
     # Hard wall-clock cap for the whole summary+recommendations step. Exceeding
     # it returns canned fallback text instead of hanging the prediction request.
-    # Must stay comfortably below the clients' abort timeout (45s).
-    llm_report_budget_seconds: float = 28.0
+    # Must stay comfortably below the clients' abort timeout (240s).
+    llm_report_budget_seconds: float = 18.0
     llm_external_enabled: bool = True
 
     model_checkpoint: str = "checkpoints/tabular_best.pt"

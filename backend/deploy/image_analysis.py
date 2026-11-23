@@ -41,7 +41,8 @@ MIN_FACE_AREA_FRAC = 0.02
 MIN_BLUR = 40.0
 BRIGHT_LOW, BRIGHT_HIGH = 35.0, 235.0
 BLUR_WORKING_WIDTH = 800
-DETECT_MAX_SIDE = 1600
+DETECT_MAX_SIDE = 1024
+DETECT_IMGSZ = 384
 PREVIEW_WIDTH = 640
 BLACK = (0, 0, 0)
 
@@ -129,7 +130,7 @@ def _resize_for_work(bgr: np.ndarray) -> np.ndarray:
 
 
 def detect_faces(model, bgr: np.ndarray, conf: float) -> list[dict]:
-    result = model.predict(bgr, conf=conf, iou=0.5, verbose=False)[0]
+    result = model.predict(bgr, conf=conf, iou=0.5, imgsz=DETECT_IMGSZ, verbose=False)[0]
     boxes = getattr(result, "boxes", None)
     if boxes is None or len(boxes) == 0:
         return []
